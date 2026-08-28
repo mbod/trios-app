@@ -28,6 +28,8 @@ auto-save-list
 *.*#
 *.*~
 
+# IGNORE CONFIGURATION AND KEY FILE
+
 .env
 
 # Byte-compiled / optimized / DLL files

@@ -1,0 +1,67 @@
+{% extends 'base.html' %} {% block content %}
+
+<h2 id="home-header">Room {{ room }}</h2>
+
+<div id="room-container">
+
+  <div id="messages">
+
+  </div>
+  <div id="stimuli">
+    {% for part in participants %}
+        <div class="from{{part}} stimImage">
+        <img src="{{url_for('static', filename='images/image'+part+'.svg')}}"/>
+        </div>
+    {% endfor %}
+  </div>
+
+  
+    <div id="message-box">
+      <input type="text" placeholder="Enter your message" id="message-input" name="message" />
+      <button type="submit" id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+
+  
+  
+</div>
+
+    <script type="text/javascript">
+    const socketio = io();
+
+
+
+    console.log(socketio);
+      
+    socketio.on("message", function (message) { console.log('WS: ' + message); createChatItem(message.message, message.from) });
+
+
+        
+    function createChatItem(message, sender) {
+
+      /* TODO: Fix and check this logic for selecting which WS messages
+               to pay attention to - probably a cleaner way of doing this  */
+    
+
+      console.log(`${sender}: ${message}`);
+
+     
+        
+      const messages = document.getElementById("messages");
+
+      content = `<p class="message from${sender}">${sender}: ${message}</p>`;
+        
+      messages.innerHTML += content;
+
+      // Keep inbox scrolled to bottom
+      messages.scrollTop = messages.scrollHeight;        
+    }
+
+	
+  </script>
+
+    
+
+
+
+
+{% endblock %}

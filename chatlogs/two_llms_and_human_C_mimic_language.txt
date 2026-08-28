@@ -1,0 +1,183 @@
+# two LLMS (A and B) and mbod (C) - 8/21/26
+# note how LLMS pick up language used of "DIFFERENCE n"
+# also when C stops interacting A&B do not ask questions or check
+
+
+
+A: Hi, I’m here!
+
+B: Hi, I’m here!
+
+C: Hi I'm here too!
+
+C: How are you both today A and B?
+
+A: Has anyone noticed anything unusual about the clouds in their image?
+
+C: How is the weather where you are?
+
+A: The sun in my image has an orange fill and a darker orange outline. Does that match what you both see?
+
+B: The sun in my image has a gold fill and an orange outline. Does anyone else see this?
+
+C: Hey A - I have three sets of clouds each with 3 circles
+
+A: I noticed a small red flag with a cross on it hanging from a pole near the bottom-right of the image. Does anyone else have that in their image?
+
+A: I see a tree with a green top and brown trunk on the left side of my image. Does everyone have this tree, and does it look the same?
+
+C: Hello B nice to meet you! My sun on the top left is yellow with an orange outline
+
+B: I noticed a purple-colored balloon shape near the top-right corner of my image. Does anyone else have a similar shape there?
+
+A: I have a sign in the center-bottom area that says 'STOP' with a red octagonal shape. Does everyone else see that?
+
+C: Hey so B when you say 'gold' could that be taken as yellow?
+
+B: It sounds like there might be a difference in the color of the sun—mine is gold with an orange outline, while A's and C's have been described slightly differently.
+
+B: I noticed three colorful balloons on the bottom-left corner of my image, with pink, orange, and yellow colors. Do you both have this as well?
+
+A: It seems like there's a difference in the sun's colors across our images. Could this be one of the differences?
+
+A: I noticed a rainbow arc near the top-right of my image. Do any of you have that as well?
+
+C: Yes A I agree - lets call that DIFFERENCE 1 - sun color - do you agree B?
+
+B: Yes, I agree with calling sun color DIFFERENCE 1. I also noticed the purple balloon shape near the top-right corner in my image. Could that be another difference?
+
+B: I noticed a blue ellipse-shaped lake in the bottom-right area of my image. Does anyone else see this lake?
+
+A: I also see a 'STOP' sign in my image, but do your images also have a green 'PARK' sign? Mine is in the center-right area.
+
+C: B I have a ballon to the left of the kite but it is a RED balloon - like a hot air balloon
+
+A: I noticed the tree on the far-left has a brown trunk with a green top—does this tree look the same for you both, or are there any differences?
+
+C: A I have a SQUARE RED stop sign with WHITE letters saying "STOP" - it is just about in the middle of the image in front of the yellow house
+
+A: I noticed a kite with a red body and a cross pattern near the middle-right of the image. Do you both have this?
+
+B: Based on what C mentioned, the red hot air balloon might be DIFFERENCE 2 since I see a purple balloon in that area. Do you agree?
+
+B: I noticed a kite with blue accents near the middle-right of my image. Does anyone else see this or have different kite colors?
+
+A: It seems the kite's colors might be DIFFERENCE 3 since I see a red kite while B sees one with blue accents. Do you both agree?
+
+A: I have a blue lake in the bottom-right area of my image. Do either of you see this, or could this be another difference?
+
+B: It seems the blue lake in the bottom-right could be DIFFERENCE 4 since A has mentioned it, and I'm not sure if we all have it.
+
+A: I see a yellow house with a red roof near the center of my image. Is this the same in your images, or could there be differences?
+
+A: I noticed a tree on the far-right with a green top and a brown trunk—does this look the same in your images or could it be another difference?
+
+B: I noticed three sets of clouds in my image, each with three circles. Does this match what you both see, or are there differences?
+
+C: I have a dark blue lake in the botton right quarter to the right of the path and the green sign - it has a boat in it and a dock and some floating balls or balloons
+
+A: I noticed a path winding through the middle of my image towards the bottom. Does this path look the same for everyone, or could there be differences?
+
+A: I see a small airplane shape near the top-center of my image. Does anyone else have this, or could this be a difference?
+
+A: I've noticed a colorful rainbow arc near the top-right area of my image. Does anyone else have it, or could it be a difference?
+
+C: A yes yellow house in the middle - brown door a square window in top right and a red roof it is in front of ta brown pyramid and has a fence in front
+
+A: I've noticed a red flower near the bottom-left corner of my image. Do either of you see this, or could it be a difference?
+
+B: I noticed a small chimney with smoke coming from it on the yellow house's red roof. Do you both have this, or could it be a difference?
+
+B: I noticed the brown wooden treehouse on the left side of my image. Does anyone else have this, or could it be another difference?
+
+A: I see a green 'PARK' sign next to the path in my image towards the bottom-right. Does everyone have this or could it be a difference?
+
+A: In my image, I see a small blue car near the bottom-left corner. Does anyone else have this, or could it be another difference?
+
+C: Huh interesting - A do you have a chimney on your yellow house?
+
+A: I noticed a tall lamppost with a circular light near the center-right area of my image. Do either of you have this, or could it be another difference?
+
+B: I noticed a small circular pond with lily pads near the bottom-center of my image. Does anyone else see this, or could it be another difference?
+
+A: I noticed that there's a small red kite with a cross pattern in my image. Have we confirmed if this matches everyone's or could it be another difference?
+
+C: A what about the chimney on the yellow house - B said they see one I do not
+
+A: B, can you describe the chimney on your yellow house? I want to check if there's any difference.
+
+B: It seems the yellow house’s chimney could be DIFFERENCE 5 since I see it in my image, but C does not.
+
+A: I noticed a blue car in the bottom-left corner of my image. Have we confirmed whether this is consistent across our images or could it be another difference?
+
+A: I noticed a small gray stone path near the bottom-center of my image. Does anyone else see this, or could it be another difference?
+
+A: I noticed three sets of clouds in my image, each with three circles. Does this match what both of you see, or could it be a difference?
+
+B: I noticed a small pastel pink flower near the bottom-left corner of my image. Does anyone else see this, or could it be a difference?
+
+C: Hey B do you definitely see a chimney? its coming out of the red roof?
+
+B: I noticed a green flag with a yellow star near the top-left corner of my image. Does anyone else have this, or could it be another difference?
+
+A: It seems like the sun color and the yellow house chimney were identified as differences. Has anyone noticed anything specific about the kites or balloons mentioned earlier? Could there be more differences related to them?
+
+A: I noticed a blue lake in the bottom-right of my image. It has a few floating objects in it. Could that be another difference?
+
+C: B can you draw the house in the middle for us
+
+A: I noticed a lamppost with a circular light near the center-right area of my image. Does anyone else see this, or could it be another difference?
+
+A: I noticed that near the top-right, there’s a colorful rainbow arc in my image. Does this match what you both see, or could this be another difference?
+
+B: I noticed a small red kite with a cross pattern near the middle-right of my image. Does anyone else have this, or could it be another difference?
+
+C: Mine looks like this [added an SVG chunk]
+
+# stopped interacting at this point and A&B continued
+
+A: I noticed a green bench near the bottom-center of my image, close to the path. Do either of you see this, or could it be another difference?
+
+B: I noticed a tall tree on the far-left side of my image with a particularly wide green top. Do either of you see this, or could it be another difference?
+
+A: I noticed a colorful kite near the middle-right of my image with red and white patterns. Have we confirmed if the kites are identical across our images?
+
+B: I noticed a yellow duck floating in the blue lake at the bottom-right of my image. Does anyone else see this, or could it be another difference?
+
+A: I noticed a small red flower near the bottom-left area of my image. Does anyone else have this or could it be another difference?
+
+B: I noticed a gray path winding through the middle of the image toward the bottom. Does this align with what you both see, or could it be another difference?
+
+A: I noticed a small flamingo-like shape near the blue lake in my image. Do either of you see this, or could it be another difference?
+
+B: I noticed a boat floating in the blue lake at the bottom-right of my image. Does anyone else see this, or could it be another difference?
+
+B: I noticed a set of three colorful balloons at the bottom-left corner—one pink, one orange, and one yellow. Does anyone else have these, or could it be another difference?
+
+A: I noticed a triangle-shaped red-roofed house near the center of my image with a chimney—could this be another difference?
+
+B: I noticed a small green flag with a yellow star near the top-left corner of my image. Does anyone else have this, or could it be another difference?
+
+A: I noticed that the sky in my image is clear with no birds—does anyone else see birds, or is the sky the same for you both?
+
+B: I noticed a path winding through the middle of the image with a sharp curve near the bottom-left. Does anyone else see this, or could it be distinct in my image?
+
+A: I noticed a small circular stone well near the bottom-center of my image. Does anyone else have this, or could it be another difference?
+
+A: It seems like the sun color was identified as DIFFERENCE 1. I noticed a green 'PARK' sign near the bottom-right—could this be another difference?
+
+B: I noticed that the bottom-center of my image has a small green bench near the path. Is this consistent across everyone’s images or could it be another difference?
+
+B: I noticed a single green tree on the far-right side of my image. Does this match what others see, or could it be another difference?
+
+A: I noticed a small circular pond with lily pads near the bottom-center of my image. Does anyone else have this, or could it be another difference?
+
+A: I noticed a red mushroom with white spots near the bottom-left corner of my image. Does anyone else have this, or could it be another difference?
+
+A: We've identified the sun color as DIFFERENCE 1. I also noticed a yellow duck floating in the blue lake in the bottom-right. Does anyone else see this, or is it a new difference?
+
+A: The rainbow arc near the top-right of my image hasn't been confirmed yet. Is this present for anyone else, or could it be another difference to consider?
+
+B: I noticed a path winding through the center of the image and some small red flowers near it. Does anyone else see these, or could they be differences?
+
+A: I noticed a small red kite with a cross pattern near the middle-right of my image. Could this be another difference to confirm?

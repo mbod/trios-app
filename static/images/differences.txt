@@ -1,0 +1,13 @@
+Notes on the 9 differences
+- A-only differences (B and C match each other):
+  - Sun color: A = orange; B,C = yellow.
+  - Kite color: A = red; B,C = blue.
+  - Direction sign text: A = “PARK”; B,C = “LAKE”.
+- B-only differences (A and C match each other):
+  - Bus color: B = green; A,C = yellow.
+  - Tree 3: hidden in B; visible in A,C.
+  - Hot air balloon color: B = purple; A,C = red.
+- C-only differences (A and B match each other):
+  - Lake color: C = deep blue; A,B = light blue.
+  - Stop sign shape: C = square; A,B = octagon.
+  - Bird 1 color: C = black; A,B = gray.

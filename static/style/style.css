@@ -1,0 +1,103 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background-color: #020202;
+  color: #f0f0f0;
+  padding: 20px;
+}
+
+h2 {
+    padding-bottom: 20px;
+}
+
+#root {
+    
+}
+
+#room-container {
+    display: flex;
+    height: 550px;
+}
+
+.message {
+    padding: 8px;
+    margin-left: auto;
+    margin-right: 0;
+    margin-bottom: 4px;
+    border-bottom-right-radius: 1;
+    color: #303030;
+}
+
+
+#message-box {
+  //position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 120px;
+  display: flex;
+  padding-top: 30px;
+}
+
+#send-btn {
+    width: 10%;
+}
+
+
+#message-input {
+  flex-grow: 1;
+  padding: 10px;
+  font-size: 1.1rem;
+  outline: none;
+  border: 4px solid rgb(191, 237, 255);
+  border-right: none;
+  background-color: white;
+  //border-bottom-left-radius: 15px;
+}
+
+
+
+
+.fromA {
+    background-color: #0072B2;
+}
+
+.fromB {
+    background-color: #E69F00;
+}
+
+.fromC {
+    background-color: #009E73;
+}
+
+#stimuli {
+    flex: 30%;
+}
+
+.stimImage {
+    padding: 1%;
+    height: calc(33%);
+}
+
+.stimImage img {
+    height: 98%;
+    padding-left: 10%;
+}
+
+
+#messages {
+
+    flex: 65%;
+    padding: 30px;
+    border: 1px solid #f0fff0; 
+    border-radius: 15px;
+    padding: 8px;
+    #height: calc(80%);
+    overflow-y: auto;
+}
