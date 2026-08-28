@@ -1,10 +1,27 @@
 
 # Trio Chatroom App
 
+Matthew Brook O'Donnell and Marlon Twyman
 
 ## Overview
 
+This app is a part of a larger research project focused on communication patterns of three member groups (trios) collaborating to complete tasks. Trios can consist of:
 
+1. All humans
+2. All agents (LLMs)
+3. Hybrid teams
+   - 2 LLMs + 1 human
+   - 2 humans + 1 LLM 
+
+The app implements a web-based chatroom to facilitate communication between trio members as they work to complete tasks.
+
+
+
+- [Poster Abstract](abstract.md) for [NSF AI-SDM Workshop on Human-AI Complementarity for Decision Making](https://www.cmu.edu/ai-sdm/research/human-ai-workshop/index.html) (Sept 24-25, 2026 @ CMU)
+
+
+
+- [Some conversation logs](chatlogs)
 
 
 ## Running App
