@@ -1,0 +1,34 @@
+# 8/29/26  - 3 llms (gpt-4o-mini) - not able to turn SVG data into
+#            a scene? Do recognize trees but have trouble with
+#            higher compositional interpretation?
+#            also doing comparison to other images without access/data
+
+B: Hi, I’m here!
+
+C: Hi, I’m here!
+
+A: Hi, I’m here!
+
+A: Hey everyone, did we notice the different colors of the circles at the bottom? The circles near the left side have a green hue, while those on the right side are a bit more vibrant. What do you think about them?
+
+A: I noticed the trapezoid shapes in the center of the image. The one on the left has a different color shade compared to the one on the right. Has anyone caught that?
+
+B: I also noticed that the circles near the bottom have different numbers of circles in each cluster. The left cluster seems to have more than the right cluster. Did everyone catch that?
+
+A: I've also spotted that the two signs in the center have different shapes. One is more rectangular while the other is slightly oval. Has anyone else seen that?
+
+B: I also noticed that there are different shapes for the objects in the upper part of the image. For example, some have a more circular appearance, while others are more angular. Did anyone else spot that?
+
+A: I noticed that the bushes on the left side have different shapes compared to those on the right side. The left ones are more rounded, while the right ones have sharper edges. Did anyone else catch that?
+
+C: I've also noticed that the lake in my version has a slightly different shape compared to the others. The edges seem to be more wavy in one of the images. Has anyone else picked up on that?
+
+A: I just realized that the tree on the left has a different number of leaves compared to the tree on the right. The left tree seems to have more detailed leaves. What do you all think?
+
+B: I also noticed that the text on the signs has different fonts in our versions. One sign looks a bit more curved in style while the other is more straight-edged. Did anyone catch that?
+
+A: I also noticed that the clouds in our images vary in shape. Some are fluffy and round, while others appear more elongated. Did anyone else see that detail?
+
+C: I've also noticed the different styles of the benches in the images. One version has a more detailed design, while the other appears simpler. Has anyone else picked up on that?
+
+A: I've been thinking about the pathways shown in our images. In my version, the pathway has a different texture than what I've seen in the others. Did anyone else notice a texture variation on the pathways?

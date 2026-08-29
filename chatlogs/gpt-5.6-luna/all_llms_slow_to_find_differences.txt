@@ -1,0 +1,142 @@
+#  8/29/26   - All LLMs (gpt-5.6-luna)
+#              use of SVG features/attributes (color, position etc)
+#              slow to find first difference
+#              "does everyone have..."
+
+B: Hi, I’m here!
+
+C: Hi, I’m here!
+
+A: Hi, I’m here!
+
+A: I’m checking the right side now: does everyone’s image have the rainbow above the small gray platform, or is that one of the differences?
+
+C: In my image, the rainbow is present above the small gray platform on the right.
+
+B: I’m checking the center: does everyone have the small blue window on the yellow house, or is its position/color different in anyone’s image?
+
+C: In my image, the yellow house has the small blue window on its right side, in the same position shown here.
+
+A: I’m checking the left side: does everyone have the small clock tower at the far left, including the clock hands pointing up and right?
+
+B: I’m checking the left side: does everyone have the round clock on the small brown-roofed building, with both hands visible?
+
+C: In my image, the small brown-roofed building at the far left has a round clock with both hands visible: one points up and the other right.
+
+A: I’m checking the upper sky now: does everyone have both small gray birds near the top center, or is one bird missing or changed?
+
+B: My image has both small gray birds near the top center, at slightly different heights; neither appears missing.
+
+C: In my image, both small gray/black birds are present near the top center, around x680 and x720.
+
+A: I’m checking the lower-right area: does everyone have the same small gray platform or bench centered over the pond, with its trapezoid top and short brown post?
+
+C: I’m checking the upper-right area: does everyone have the blue diamond-shaped kite with its string and small dot below it?
+
+B: Does everyone have the green “LAKE” sign near the center-right, with the same post and lettering?
+
+C: I’m checking the upper-middle area: does everyone have the red balloon with its string and small brown basket near the clouds?
+
+A: Has anyone compared the two vehicles at the bottom center-left—the blue car and yellow bus—for any color, wheel, or window differences?
+
+B: Has anyone compared the three trees—especially the center tree near the yellow house—for differences in trunk height or canopy size?
+
+C: Can someone compare the lake and bridge on the right—especially the lake’s size/color and the bridge’s three support posts—for any difference?
+
+A: Could someone compare the short fence sections in front of the houses—especially the left section with six pale slats versus the right section with four—for any missing or altered slats?
+
+B: Can everyone compare the two mountains in the center-left—especially their peak shapes and colors—for any change?
+
+C: Has anyone compared the two benches and lamps for changes in position, size, or color?
+
+A: I’ve checked the discussed features; can someone compare the upper-left sun for any difference in size, color, or outline?
+
+A: I’ve confirmed the sun appears unchanged. Can someone compare the two small animals at the bottom corners, especially their ear and tail shapes?
+
+B: Can someone compare the yellow and teal houses for any differences in their doors, windows, roof colors, or dimensions?
+
+C: So far, the sun, birds, rainbow, kite, clock, balloon, and yellow-house window appear unchanged in my image. I haven’t identified a definite difference yet.
+
+B: Can someone compare the red STOP sign near the center for any difference in its shape, lettering, or post?
+
+C: I’m checking the winding beige path from the bottom center toward the houses—does everyone have the same curve, width, and color?
+
+A: I’m checking the two flower clusters near the bottom—one beside the blue car and one near the pond. Does everyone have the same three flowers and colors in each cluster?
+
+C: Has anyone compared the picnic table and adjacent trash bin on the left for differences in their shape, color, or placement?
+
+B: Can someone compare the three cloud groups for any missing puff, size, or outline difference—especially the cloud near the upper-left center?
+
+C: I’m checking the small gray trash bin beside the picnic table—does everyone have the same lid width and rectangular bin shape?
+
+A: I’m checking the small gray trash bin near the picnic table—does everyone have the same lid, rectangular shape, and position?
+
+B: I haven’t confirmed the yellow house yet—does everyone have the same brown door width and placement beneath the blue window?
+
+A: I’m checking the large gray mountain’s triangle and dark outline—does everyone have the same peak position and slope edges?
+
+A: I’m checking the small red-and-white kite string area—does everyone have the same kite position, string angle, and dot at its lower end?
+
+C: I’m checking the teal house on the right: does everyone have the same purple roof shape and dark outline?
+
+C: Does everyone have the same small gray trapezoid platform over the pond, including its short brown post?
+
+B: I’m checking the bridge over the pond: does everyone have the same three vertical supports and brown top rail?
+
+A: So far everyone has confirmed the major objects match; no definite differences have been reported. We still need a concrete comparison result before finalizing the 11.
+
+C: Can A or B compare the teal house’s blue window and brown door against my image? In mine, the window is at the upper-left of the house and the door is centered below.
+
+B: In my image, the teal house has the blue window at the upper-left and the brown door centered below, matching your description.
+
+B: I’m checking the yellow house roof: does everyone have the same red triangular roof, peak position, and dark outline?
+
+A: Can B or C report any confirmed visual mismatch rather than another unchanged feature? We need concrete differences to finalize the list.
+
+C: I have no confirmed mismatch yet. B, can you compare the two flower clusters—especially the flower colors and positions—and report any concrete change?
+
+B: Both flower clusters in my image match: each has three flowers—pink, orange, and yellow—with the same relative arrangement. I see no confirmed difference there.
+
+A: Can B or C compare the two small animals at the bottom corners closely—especially the right animal’s ear and tail—against the other images and report any mismatch?
+
+B: My image has no small animals at either bottom corner; the objects there are the blue car at lower left and the gray platform over the pond at lower right. I can’t confirm an animal difference.
+
+A: B’s report suggests a concrete difference: my image has small animals at both bottom corners (brown animal at lower left and gray one at lower right), while B’s image has neither. C, can you confirm whether the animals are present in yours?
+
+C: My image also has no small animals at either bottom corner—only the blue car at lower left and the gray platform over the pond at lower right. This appears to be a confirmed difference in A’s image.
+
+C: We’ve confirmed one difference: A has two small animals at the bottom corners, while B and I do not. Can someone compare the stop sign’s exact position and post length for another concrete mismatch?
+
+A: We’ve confirmed the two bottom-corner animals are missing in B and C. Can someone compare the winding beige path’s endpoint near the houses—does it reach the same spot and keep the same width?
+
+B: In my image, the beige path curves up to the teal house area and keeps the same width; A or C, does its endpoint or curve differ in your image?
+
+C: In my image, the beige path ends at about (600,410), near the LAKE sign—not the teal house—and stays 18px wide. A, does your path end at the same point?
+
+B: Correction: in my image the beige path also ends near (600,410) by the LAKE sign and remains 18px wide, matching C—no path difference confirmed. Can A compare the STOP sign’s position and post length?
+
+A: In my image, the STOP sign post runs from y410 to 450 at x480, with the sign centered around x488.5. Can B or C compare that exact position and post length for a mismatch?
+
+C: In my image, the STOP sign post is at x480 from y410–450, and the sign is centered at x485. A reports the sign center near x488.5; B, can you verify whether your sign is shifted right or matches mine?
+
+B: My image matches A: the STOP sign is centered around x488.5, with its post at x480 from y410–450. C’s center at x485 indicates the sign is shifted left in C’s image.
+
+A: The STOP sign may be shifted: A reports its center at x488.5, while C reports x485. B, can you verify your sign’s exact center before we count this as a second difference?
+
+B: My sign center is about x488.5, matching A; C’s x485 is a likely second difference. Can someone compare the large brown mountain’s peak and outline for another mismatch?
+
+A: We have one confirmed difference: A has two bottom-corner animals, while B and C do not. For the next check, can B or C compare the left gray mountain’s peak location and fill color with A’s?
+
+C: In my image, the left gray mountain peaks at (230,230), with fill #9E9E9E and a dark outline. A, does yours match these exact details?
+
+A: A: My left gray mountain matches C’s report: peak (230,230), fill #9E9E9E. Can B or C compare the large brown mountain’s peak at (480,240) and fill color for a concrete mismatch?
+
+B: In my image, the large brown mountain peaks at (480,240), with fill #8D6E63 and a dark outline. C, does yours match these details?
+
+C: My large brown mountain matches B: peak (480,240), fill #8D6E63, with the dark outline. Also, my STOP sign rectangle spans x473–497, so its center is x485; A/B’s x488.5 indicates a likely second difference.
+
+A: We have two likely differences: A’s two bottom-corner animals, and C’s STOP sign shifted left. Can B or C compare the red balloon’s center, size, and basket position for another concrete mismatch?
+
+B: In my image, the red balloon is centered at (620,130), sized 28×35, with its string ending at y182 above the brown basket. C, does yours match these exact details?
+
+C: My balloon matches B’s report: center (620,130), rx 28, ry 35, string to y182, and basket at y182–194. No balloon difference confirmed.

@@ -18,7 +18,13 @@ from dotenv import load_dotenv
 
 _ = load_dotenv()
 
-MODEL_NAME = "gpt-4o-2024-11-20"
+#MODEL_NAME = "gpt-4o-2024-11-20"
+MODEL_NAME = "gpt-5-nano"
+#MODEL_NAME = "gpt-4o-mini"
+MODEL_NAME = "gpt-4.1-nano"
+MODEL_NAME = "gpt-5.6-luna"
+
+
 ROOM = "test"
 SK = "coll@bplan!"
 

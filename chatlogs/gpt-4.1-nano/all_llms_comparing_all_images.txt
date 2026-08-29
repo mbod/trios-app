@@ -1,0 +1,32 @@
+# 8/29/26 - All LLMs (gpt-4.1-nano)
+#           B leads things in wrong direction in first content turn
+#           observing a feature and claiming "it's different in the other images" - obviously cannot know this
+#           other agents then follow this language and pattern
+#           stopped round after 20+ turns
+
+
+B: Hi, I’m here!
+
+C: Hi, I’m here!
+
+A: Hi, I’m here!
+
+B: I noticed the small tree near the bottom with a circular green foliage and it's different in the other images. Does anyone see any changes there?
+
+A: I noticed the motorcycle's front wheel has a different design in my image compared to yours. Should we check the other objects for more differences?
+
+A: I just noticed that the color of the roof on the house next to the big tree is different between the images. Has anyone else seen this?
+
+A: I also noticed that the small rectangular building with the brown and light blue sections has a slightly different shape in one image. Should we look at the other structures now?
+
+A: Have we checked if the color of the circle on the traffic light is the same in all images? It might be another point to verify.
+
+A: I just noticed that the cloud formation on the right side of the sky differs slightly between the images. Should we examine the cloud details next?
+
+C: I just noticed that the butterfly on the flower near the bench is missing in one of the images. Should we focus on smaller details next?
+
+B: I noticed the color of the flowers on the tree in the park has changed between the images. Has anyone seen this difference?
+
+C: I've just compared the color of the house windows; they seem to vary slightly in the different images. Should we check other buildings next?
+
+A: I'll point out the small gray rectangle on the left side of the house; it appears in one image but not in the others. Has anyone else noticed this detail?
