@@ -1,0 +1,25 @@
+
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="320"
+     height="320"
+     
+>
+<g transform="translate(50 50)">
+
+<text y="0" x="0" font-size="50">💡</text>
+<text y="0" x="100" font-size="50">🎉</text>
+<text y="0" x="200" font-size="50">🌺</text>
+
+<text y="100" x="0" font-size="50">🚀</text>
+<text y="100" x="100" font-size="50">🎨</text>
+<text y="100" x="200" font-size="50">🌈</text>
+
+<text y="200" x="0" font-size="50">😀</text>
+<text y="200" x="100" font-size="50">🎵</text>
+<text y="200" x="200" font-size="50">🌟</text>
+
+</g>
+
+</svg>
+
+

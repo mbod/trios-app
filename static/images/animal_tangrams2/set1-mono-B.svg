@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1038"
+     height="852"
+     viewBox="0 0 1038 852">
+
+  <g transform="translate(0 0)">
+      <path fill="#202020" d="M 48 37 L 96 82 L 96 36 Z"/>
+  <path fill="#202020" d="M 98 113 L 94 241 L 163 179 Z"/>
+  <path fill="#202020" d="M 130 145 L 227 240 L 227 145 Z"/>
+  <path fill="#202020" d="M 230 145 L 262 179 L 298 146 Z"/>
+  <path fill="#202020" d="M 227 143 L 183 99 L 132 143 Z"/>
+  <path fill="#202020" d="M 132 81 L 97 111 L 129 144 L 165 113 Z"/>
+  <path fill="#202020" d="M 62 52 L 62 117 L 94 149 L 96 83 Z"/>
+  </g>
+
+  <g transform="translate(346 0)">
+      <path fill="#202020" d="M 43 64 L 89 65 L 89 149 L 174 148 L 88 64 L 88 23 Z"/>
+  <path fill="#202020" d="M 100 244 L 231 244 L 166 182 Z"/>
+  <path fill="#202020" d="M 87 114 L 50 149 L 86 185 Z"/>
+  <path fill="#202020" d="M 133 150 L 201 210 L 201 149 Z"/>
+  <path fill="#202020" d="M 132 150 L 100 182 L 130 213 L 164 182 Z"/>
+  <path fill="#202020" d="M 198 211 L 232 244 L 302 243 L 264 210 Z"/>
+  </g>
+
+  <g transform="translate(692 0)">
+      <path fill="#202020" d="M 168 91 L 77 91 L 76 151 L 41 186 L 75 220 L 75 184 Z"/>
+  <path fill="#202020" d="M 193 69 L 100 161 L 192 161 Z"/>
+  <path fill="#202020" d="M 244 67 L 244 113 L 291 113 Z"/>
+  <path fill="#202020" d="M 194 66 L 194 161 L 241 115 Z"/>
+  <path fill="#202020" d="M 145 163 L 145 210 L 192 210 L 193 163 Z"/>
+  <path fill="#202020" d="M 291 114 L 243 113 L 195 161 L 242 161 Z"/>
+  </g>
+
+  <g transform="translate(0 284)">
+      <path fill="#202020" d="M 157 35 L 126 65 L 156 94 Z"/>
+  <path fill="#202020" d="M 188 183 L 64 185 L 123 247 Z"/>
+  <path fill="#202020" d="M 66 183 L 187 183 L 128 126 Z"/>
+  <path fill="#202020" d="M 95 36 L 95 94 L 124 66 Z"/>
+  <path fill="#202020" d="M 189 184 L 124 247 L 189 248 Z"/>
+  <path fill="#202020" d="M 127 66 L 95 96 L 125 125 L 156 96 Z"/>
+  <path fill="#202020" d="M 285 210 L 234 209 L 192 248 L 243 248 Z"/>
+  </g>
+
+  <g transform="translate(346 284)">
+      <path fill="#202020" d="M 106 105 L 171 171 L 240 104 Z"/>
+  <path fill="#202020" d="M 237 220 L 204 189 L 171 221 Z"/>
+  <path fill="#202020" d="M 37 171 L 170 172 L 105 105 Z"/>
+  <path fill="#202020" d="M 269 106 L 269 172 L 303 139 Z"/>
+  <path fill="#202020" d="M 267 80 L 219 127 L 267 174 Z"/>
+  <path fill="#202020" d="M 36 173 L 36 220 L 84 221 L 84 173 Z"/>
+  <path fill="#202020" d="M 218 128 L 169 174 L 169 220 L 218 174 Z"/>
+  </g>
+
+  <g transform="translate(692 284)">
+      <path fill="#202020" d="M 106 139 L 106 226 L 166 226 L 138 193 L 189 139 Z"/>
+  <path fill="#202020" d="M 308 76 L 229 76 L 229 160 Z"/>
+  <path fill="#202020" d="M 194 164 L 236 208 L 237 164 Z"/>
+  <path fill="#202020" d="M 228 101 L 168 163 L 227 163 Z"/>
+  <path fill="#202020" d="M 284 105 L 252 137 L 282 167 L 314 136 Z"/>
+  <path fill="#202020" d="M 104 140 L 49 155 L 28 193 L 84 178 Z"/>
+  </g>
+
+  <g transform="translate(0 568)">
+      <path fill="#202020" d="M 216 100 L 289 99 L 250 65 Z"/>
+  <path fill="#202020" d="M 187 74 L 186 199 L 249 137 Z"/>
+  <path fill="#202020" d="M 186 75 L 121 137 L 185 198 Z"/>
+  <path fill="#202020" d="M 218 169 L 244 209 L 286 179 Z"/>
+  <path fill="#202020" d="M 142 161 L 97 206 L 145 252 Z"/>
+  <path fill="#202020" d="M 89 106 L 56 137 L 87 168 L 119 138 Z"/>
+  <path fill="#202020" d="M 102 34 L 101 77 L 142 116 L 144 74 Z"/>
+  </g>
+
+  <g transform="translate(346 568)">
+      <path fill="#202020" d="M 185 132 L 92 132 L 92 222 Z"/>
+  <path fill="#202020" d="M 262 155 L 228 188 L 261 222 L 263 158 L 261 168 L 257 161 Z"/>
+  <path fill="#202020" d="M 225 95 L 131 186 L 227 188 L 234 181 L 226 186 Z"/>
+  <path fill="#202020" d="M 227 186 L 274 143 L 227 143 Z"/>
+  <path fill="#202020" d="M 321 94 L 275 47 L 227 93 Z"/>
+  <path fill="#202020" d="M 227 95 L 227 142 L 274 142 L 275 95 Z"/>
+  <path fill="#202020" d="M 32 85 L 74 130 L 123 130 L 79 85 Z"/>
+  </g>
+
+  <g transform="translate(692 568)">
+      <path fill="#202020" d="M 151 101 L 116 192 L 204 220 Z"/>
+  <path fill="#202020" d="M 306 134 L 245 164 L 290 179 Z"/>
+  <path fill="#202020" d="M 170 140 L 205 220 L 288 180 Z"/>
+  <path fill="#202020" d="M 86 131 L 115 190 L 132 146 Z"/>
+  <path fill="#202020" d="M 56 71 L 150 99 L 117 40 Z"/>
+  <path fill="#202020" d="M 100 86 L 86 130 L 133 144 L 149 101 Z"/>
+  <path fill="#202020" d="M 85 131 L 68 182 L 97 238 L 114 190 Z"/>
+  </g>
+    
+</svg>
