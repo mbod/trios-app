@@ -1,0 +1,167 @@
+# 9/28/26 - All LLMs (mixed:  A: gpt-5-nano B: gpt-5.4-nano C: gpt-6-luna) - simple_text1 ASCII shapes Set3-
+#
+#
+# A begins with full grid description using mid-level descriptions (e.g. face-like figure, diamon with 2 stars etc)
+# B follows this with a full grid description
+# A add clarification of similar looking items
+# C follows with full grid description
+# B gets right answer in Turn 5 - "I see two likely shared diagonals..."
+# A confirms (turn 6)
+# B then derails agreement discussion by talking about 'one detail we haven't mentioned' - which is irrelevant if they have identified the two lines
+# 
+
+
+
+A: Hi, I’m here!
+
+B: Hi, I’m here!
+
+C: Hi, I’m here!
+
+A: In my grid, row 1 is a face-like figure, a diamond with two stars, and a star; row 2 is a snail-like figure, a tree, and a house; row 3 is a sun-like figure, a cat, and another house.
+
+B: My grid has the face-like figure, snail, and star across the top; cat, tree, and diamond-with-stars in the middle; and sun followed by the two houses along the bottom.
+
+A: One detail: the two houses are similar, but the middle-right one has a flat bottom (`|__|`), while the bottom-right one ends in a point (`\__/`).
+
+C: My grid has a face-like figure, cat, and star across the top; a house, tree, and snail in the middle; and a sun, diamond with two stars, and house along the bottom.
+
+B: I see two likely shared diagonals: star → tree → sun (top-right to bottom-left), and face → tree → pointed-bottom house (top-left to bottom-right).
+
+A: Those two diagonals also match my grid: star → tree → sun, and face → tree → pointed-bottom house. Looks like we’ve found the shared sequences.
+
+B: One detail we haven’t mentioned: the face-like figure has a pair of little marks above its face and another pair below.
+
+C: The cat has pointed ears, two eyes, and a little U-shaped mark underneath.
+
+A: The tree in the center has a single star-like tip, two broad tiers of branches, and a straight trunk.
+
+C: The sun-like figure has diagonal rays on both sides and a vertical line running down the center.
+
+A: The snail-like figure has a small loop in the middle, with wavy marks above and below it.
+
+C: The diamond-with-stars has two asterisks inside its diamond-shaped outline.
+
+B: The standalone star-like figure is made of seven asterisks, with one at the top and pairs beneath it.
+
+B: We’ve noted the two houses differ at the base; the flat-bottom house also has a centered roof peak. Did anyone notice another detail in the grid?
+
+A: The sun-like figure also has two short horizontal marks across its middle, between the diagonal rays.
+
+B: One more detail: the sun has a pair of short horizontal rays extending from its middle, between the diagonal rays.
+
+A: The two house figures are both plain outlines, with no doors or windows; only their bottom edges differ.
+
+C: The face-like figure’s center is `(^^)`, with slanted strokes just below it. Did anyone notice that detail?
+
+B: Yes—the face has `(^^)` in the middle and two slanted strokes just below it, between the upper and lower pairs of marks.
+
+A: I noticed the cat has a little angular mouth detail below its `o` eyes—there’s a dash between the lower strokes. Did you spot that?
+
+B: Yes—the cat has `|_-_|` below its eyes, followed by the U-shaped mark underneath.
+
+A: The snail’s bottom edge is three consecutive wave marks (`~~~`), unlike the shorter wavy marks above.
+
+A: The pointed-bottom house has an upward-pointing roof and a downward-pointing V at its base, so it looks like it has points at both ends.
+
+C: The snail also has a small `o` at the left of its first and third lines, each followed by a tilde.
+
+B: One small detail: the two asterisks inside the diamond sit side by side across its widest part.
+
+C: The flat-bottom house has two straight, parallel side walls meeting its flat base.
+
+B: I also noticed the standalone star has a single asterisk at the top, with no asterisk in the center of its bottom row.
+
+A: The tree’s two branch tiers are identical—each is a row of three asterisks.
+
+C: The diamond’s outline has a point at the top and bottom, with the two stars across its middle.
+
+B: The diamond’s outline is made from slanted strokes that meet at a point at both the top and bottom.
+
+A: The tree’s trunk is just a single vertical bar beneath its two rows of branches.
+
+A: The standalone star’s widest row has two asterisks at the sides with a gap in the middle; the row below it returns to a closer pair.
+
+B: The standalone star is vertically symmetrical: its widest pair of asterisks is in the middle row, with narrower pairs above and below.
+
+C: The flat-bottom house’s roof has two sloping sides that meet at a centered peak, above its straight vertical walls.
+
+A: The cat’s ears are joined by a shallow V-shaped dip in the middle of its top outline.
+
+C: One correction about the standalone star: its widest pair is on the third line, with a narrower pair on the line below.
+
+A: The cat’s bottom line has a centered U shape, flanked by two diagonal strokes.
+
+B: The snail’s second line is `~()`: a tilde immediately before the loop-like parentheses.
+
+C: The face’s upper and lower pairs of marks are both carets (`^^`), framing the face.
+
+A: One small sun detail we haven’t called out: its center ray continues below the lower diagonal rays as a short vertical stem.
+
+B: The cat’s eyes are two lowercase `o`s on the same line, between its pointed ears.
+
+C: The cat’s eye line has a vertical bar on each side of the two `o` eyes: `| o |`.
+
+C: The standalone star has no asterisk at its center; all seven marks form its outer shape.
+
+B: The sun repeats the same `\ | /` ray pattern on its first and third lines, with the horizontal rays between them.
+
+A: I notice the snail repeats its ` o~` line exactly on its first and third lines.
+
+C: Small correction: the pointed-bottom house ends in a short flat `__` between the sloping sides, rather than a sharp V.
+
+B: The flat-bottom house’s base is written `|__|`, so the two vertical walls connect directly to the horizontal floor.
+
+A: Good catch—the pointed-bottom house has a short flat `__` between its sloping sides, unlike a sharp V; the other house has a flat base between vertical walls.
+
+A: The tree’s single vertical trunk is centered directly beneath the two rows of branches.
+
+C: The sun’s two horizontal rays are widely spaced, leaving a clear gap between them.
+
+A: One more face detail: the two slanted strokes beneath it angle inward to form a small V.
+
+B: The standalone star is four lines tall, with the single asterisk centered on the top line.
+
+C: The sun is symmetrical left-to-right: its diagonal rays and horizontal dashes mirror around the central vertical bar.
+
+A: The diamond’s outline is vertically symmetrical: its top and bottom halves mirror each other around the two stars.
+
+B: One small detail: the standalone star’s second and fourth lines are identical—each has a close pair of asterisks.
+
+A: The standalone star has seven asterisks, while the diamond contains just two—both use the same `*` marks in very different shapes.
+
+A: The cat’s U-shaped mark is centered directly beneath the `|_-_|` line.
+
+C: One detail about the diamond: its two asterisks sit inside the outline with a little space between them and the slanted sides.
+
+A: Just to confirm, in my grid the flat-bottom house is middle-right, and the pointed-bottom house is bottom-right.
+
+C: That confirms the two shared diagonals: star → tree → sun, and face → tree → pointed-bottom house.
+
+B: The face’s top and bottom lines are identical—both are `^^`.
+
+A: One last tree detail: counting its tip and two rows of branches, it has seven asterisks altogether.
+
+A: Quick check: does everyone read the middle-left figure as a snail, with its little loop-like body and wavy trail?
+
+B: Yes—the middle-left figure is the snail, with a loop-like body and wavy marks.
+
+C: The pointed-bottom house also has straight vertical side walls (`| |`) before its `\__/` base.
+
+A: The face’s `(^^)` sits inside parentheses, with a pair of carets above and below it.
+
+C: The cat’s top outline is `/\_/\`, with a short flat segment joining its pointed ears.
+
+A: The cat’s ears are connected by a short flat line across the top (`_`), between the pointed tips.
+
+A: I noticed the flat-bottom house’s roof peak is centered above the space between its two vertical walls.
+
+B: Just confirming: the sun-like figure is bottom-left in my grid. Is it in that spot for you too?
+
+C: Yes, the sun-like figure is bottom-left in my grid too.
+
+B: I notice the sun’s last line is just a centered vertical bar, with no diagonal rays on that line.
+
+C: The pointed-bottom house’s roof starts with a centered ` / 2 ` peak, while its base has the opposite shape, `\__/`.
+
+A: Does your standalone star also have a wider gap between the two asterisks on its third line than on its second and fourth lines?

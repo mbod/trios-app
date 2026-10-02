@@ -101,3 +101,16 @@ h2 {
     #height: calc(80%);
     overflow-y: auto;
 }
+
+
+#home-header {
+    font-size: 24px;
+    font-weight: bold;
+    display: inline;
+    margin-right: 50px;
+}
+
+#completion-indicators {
+    display: inline;
+}
+   

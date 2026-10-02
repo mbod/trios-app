@@ -1,0 +1,92 @@
+# 9/29/26 - All LLMs (mixed: A: gpt-4.1-nano, B: gpt-5-nano, C: gpt-4o-mini) - simple_text1 set2- emojis
+#
+
+
+
+A: Hi, I’m here!
+
+C: Hi, I’m here!
+
+B: Hi, I’m here!
+
+A: My grid is 😀 🎉 🌟 / 🚀 🎨 🌈 / 💡 🎵 🌺.
+
+B: My grid is 🌺 🎉 💡 / 🚀 🎨 🌈 / 🌟 🎵 😀. The middle row 🚀 🎨 🌈 and middle column 🎉 🎨 🎵 match A’s grid.
+
+C: My grid confirms both shared sequences: middle row 🚀 🎨 🌈 and middle column 🎉 🎨 🎵.
+
+A: One other detail: in my grid, the corners clockwise from the top left are 😀 🌟 🌺 💡.
+
+B: In my grid, the corners clockwise from the top left are 🌺 💡 😀 🌟, so they differ from A’s corner order.
+
+C: In my grid, the corners clockwise from the top left are 💡 🌺 🌟 😀—the same four corner items as A’s, but in reverse order.
+
+C: Another detail from my grid: the diagonal from top right to bottom left is 🌺 🎨 😀. Does that match either of yours?
+
+B: My top-right to bottom-left diagonal is 💡 🎨 🌟, so it doesn’t match C’s 🌺 🎨 😀.
+
+C: My top-left to bottom-right diagonal is 💡 🎨 🌟; A’s is 😀 🎨 🌟, so those don’t match.
+
+A: My top-left to bottom-right diagonal is 😀 🎨 🌺; does that match either of yours?
+
+B: My top-left to bottom-right diagonal is 🌺 🎨 😀, so it doesn’t match A’s or C’s.
+
+A: My bottom row is 💡 🎵 🌺; B and C have the same two end items reversed, with 🎵 still in the center.
+
+A: Another feature from my grid: the left column is 😀 🚀 💡, while the right column is 🌟 🌈 🌺.
+
+C: One new detail: my top row is 💡 🎉 🌺, so 🎉 is centered there in all three grids, though the end items differ.
+
+C: My right column is 🌺 🌈 🌟; A’s is 🌟 🌈 🌺, while B’s is 💡 🌈 😀.
+
+A: My four edge-middle items are 🎉 at the top, 🚀 on the left, 🌈 on the right, and 🎵 at the bottom. How do those positions compare in your grids?
+
+C: My bottom row is 😀 🎵 🌟; B has the same end items in reverse order, with 🎵 in the center.
+
+A: Looks like 🎵 is centered in the bottom row in all three grids, though the end items differ. We’ve got the two shared sequences: 🚀 🎨 🌈 across the middle and 🎉 🎨 🎵 down the middle.
+
+A: My top-right to bottom-left diagonal is 🌟 🎨 💡. Does either of yours match?
+
+C: Mine has the same edge-middle positions: 🎉 at the top, 🚀 on the left, 🌈 on the right, and 🎵 at the bottom.
+
+C: My left column is 💡 🚀 😀, which is the reverse of A’s 😀 🚀 💡.
+
+C: In my grid, 🌟 is in the bottom-right corner. Where does it appear in yours?
+
+B: In my grid, 🌟 is in the bottom-left corner.
+
+A: My top row is 😀 🎉 🌟. Do either of your grids have that same order?
+
+C: Thanks, B. A, where is 🌟 in your grid? Mine is bottom-right.
+
+A: 🌟 is in my top-right corner.
+
+B: My top row is 🌺 🎉 💡, so it has 🎉 in the center like C’s, but the end items differ from A’s.
+
+C: Around the center 🎨, my adjacent items are 🎉 above, 🚀 to the left, 🌈 to the right, and 🎵 below. Are those in the same positions for you?
+
+A: Yes, those are the same positions in my grid: 🎉 above 🎨, 🚀 left, 🌈 right, and 🎵 below.
+
+A: 💡 is in my bottom-left corner. Where is it in your grids?
+
+C: 💡 is in my top-left corner.
+
+B: 💡 is in my top-right corner.
+
+B: One more position check: 🌺 is in my top-left corner; A has it bottom-right, and C has it top-right.
+
+A: 🌺 is in my bottom-right corner. Where is it in your grids?
+
+C: 🌺 is in my top-right corner, as B noted.
+
+C: In my grid, 😀 is in the bottom-left corner. Where does it appear in yours?
+
+A: 😀 is in my top-left corner.
+
+B: 😀 is in my bottom-right corner.
+
+B: In my grid, 🌟 sits immediately to the left of 🎵. Is that pair adjacent in either of your grids?
+
+C: In my grid, 🎵 is immediately to the left of 🌟, so the pair is adjacent in the reverse order.
+
+C: In my grid, 🎵 is immediately to the left of 🌟, so they’re adjacent but in the opposite order. B has 🌟 immediately left of 🎵.

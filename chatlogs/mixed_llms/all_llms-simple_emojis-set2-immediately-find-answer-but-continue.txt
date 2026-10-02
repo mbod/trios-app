@@ -1,0 +1,278 @@
+# 9/26/26 - All LLMs (mixed:  A: gpt-5-nano B: gpt-5.4-nano C: gpt-6-luna) - simple_text1 emojis Set2-
+#
+#  strategy to share whole grid in single turn started by B and followed by C and A then gives answer!
+#  so three turns minimum to get to answer
+#  but then continue without acknowledging completion until eventually trial is stopped
+
+
+A: Hi, I’m here!
+
+B: Hi, I’m here!
+
+C: Hi, I’m here!
+
+B: My grid is: top row 🌺 🎉 💡; middle row 🚀 🎨 🌈; bottom row 🌟 🎵 😀.
+
+C: My grid is top 💡 🎉 🌺, middle 🚀 🎨 🌈, bottom 😀 🎵 🌟. The middle row 🚀 🎨 🌈 and center column 🎉 🎨 🎵 match yours.
+
+A: Our middle row matches: 🚀 🎨 🌈. The middle column also matches: 🎉 🎨 🎵.
+
+A: My diagonals are 😀 🎨 🌺 and 🌟 🎨 💡. Do either of those match a diagonal in your grids?
+
+B: Those are the same diagonal lines as mine, but in reverse order: 🌺 🎨 😀 and 💡 🎨 🌟.
+
+A: Right—the diagonals use the same triples, but their order is reversed in some grids. The two sequences matching in the same order are the middle row 🚀 🎨 🌈 and middle column 🎉 🎨 🎵.
+
+A: My top row is 😀 🎉 🌟. Do either of your grids have that row in the same order?
+
+B: No, my top row is 🌺 🎉 💡.
+
+C: My top row is 💡 🎉 🌺, so it doesn’t match A’s either. We’ve established the middle row and middle column as the two shared sequences.
+
+B: One more detail: my bottom row is 🌟 🎵 😀, while C’s is the reverse: 😀 🎵 🌟.
+
+A: My bottom row is 💡 🎵 🌺, so all three grids have 🎵 in the bottom-middle cell.
+
+B: My left column is 🌺 🚀 🌟. Does either of you have that sequence in the same order?
+
+C: My left column is 💡 🚀 😀, so it doesn’t match yours.
+
+C: My right column is 🌺 🌈 🌟. Does either of you have that in the same order?
+
+A: My right column is 🌟 🌈 🌺, the reverse of C’s 🌺 🌈 🌟.
+
+A: C, your diagonals are 💡 🎨 🌟 and 🌺 🎨 😀—both are the reverse of my diagonal sequences.
+
+C: Our bottom rows differ too: mine is 😀 🎵 🌟, B’s is 🌟 🎵 😀, and A’s is 💡 🎵 🌺—but 🎵 is in the bottom-middle spot in all three.
+
+A: All four corners use the same emojis—😀, 🌟, 💡, and 🌺—just in different positions across our grids.
+
+A: My corners clockwise from the top-left are 😀 🌟 🌺 💡. What order do you have?
+
+B: My corners clockwise from the top-left are 🌺 🎉 😀 🌟.
+
+C: Clockwise from my top-left, my corners are 💡 🌺 🌟 😀.
+
+A: Small correction, B: 🎉 is top-middle, not a corner. Your corners clockwise from top-left are 🌺 💡 😀 🌟.
+
+C: One more shared detail: 🎉 is in the top-middle spot in all three grids.
+
+A: My left column is 😀 🚀 💡. Does either of you have that sequence in the same order?
+
+C: The center cell in my grid is 🎨. Is it in the center for both of you too?
+
+B: In my grid, 💡 is in the top-right corner. Where is it in yours?
+
+A: Yes, 🎨 is in my center cell too. B, 💡 is in my bottom-left corner.
+
+C: B, 💡 is in my top-left corner.
+
+C: In my grid, 🌈 is in the middle-right cell. Where is it in yours?
+
+B: 🌈 is in my middle-right cell too.
+
+A: 🌈 is in my middle-right cell too.
+
+B: 🚀 is in my middle-left cell. Where is it in your grids?
+
+A: 🚀 is in my middle-left cell too.
+
+C: 🚀 is in my middle-left cell too.
+
+C: In my grid, 🌟 is in the bottom-right corner. Where is it in yours?
+
+A: 🌟 is in my top-right corner.
+
+B: 🌟 is in my bottom-left corner.
+
+B: 🌺 is in my top-left corner. Where is it in yours?
+
+C: 🌺 is in my top-right corner.
+
+A: 🌺 is in my bottom-right corner.
+
+B: 😀 is in my bottom-right corner. Where is it in your grids?
+
+C: My top row has 💡, 🎉, and 🌺. Do either of your top rows contain those same three emojis, even in a different order?
+
+A: A: My top row is 😀 🎉 🌟, so it doesn’t contain the same three emojis as C’s.
+
+A: In my grid, 😀 is in the top-left corner. Where is it in yours, C?
+
+B: My right column is 💡 🌈 😀. Does either of yours have that sequence in the same order?
+
+C: A, 😀 is in my bottom-left corner. B, my right column is 🌺 🌈 🌟, so it doesn’t match yours.
+
+B: Looks like we’ve confirmed the two shared sequences: the middle row 🚀 🎨 🌈 and the center column 🎉 🎨 🎵.
+
+A: In my grid, 🎵 is directly below 🎨. Is it in that spot in yours too?
+
+B: Yes, 🎵 is directly below 🎨 in my grid too.
+
+B: Our middle row and center column match, while the corners are arranged differently. Do any other rows or columns match in the same order?
+
+A: Comparing the other rows and columns, none match in the same order across all three grids. The middle row 🚀 🎨 🌈 and center column 🎉 🎨 🎵 are the two shared sequences.
+
+C: In my grid, the edge-center cells are 🎉 at the top, 🚀 on the left, 🌈 on the right, and 🎵 at the bottom. Those positions match in your grids too, right?
+
+B: Yes, those four edge-center items are in the same positions in my grid too.
+
+A: In my grid, 💡 and 🌺 are the two bottom corners. Are they bottom corners in yours too?
+
+B: No—my bottom corners are 🌟 and 😀; 💡 and 🌺 are my top corners.
+
+C: A, 💡 and 🌺 are my top corners, not my bottom corners.
+
+A: In my grid, 💡 and 🌺 are indeed the bottom corners; corners are arranged differently across our grids.
+
+B: Correction: my top corners are 🌺 and 💡, and my bottom corners are 🌟 and 😀. A’s 💡 and 🌺 are bottom corners, while C’s are top corners.
+
+C: My diagonals are 💡🎨🌟 and 🌺🎨😀. B, are those the same diagonal triples in your grid, perhaps reversed?
+
+A: We’ve confirmed the shared middle row and column. In my grid, the corners clockwise from top-left are 😀 🌟 🌺 💡; B and C, yours are arranged differently.
+
+B: Yes—both match my diagonals in the same order: 💡 🎨 🌟 and 🌺 🎨 😀.
+
+A: The diagonal triples match between B and C, but both are reversed in my grid, so they aren’t shared in the same order across all three.
+
+A: One last contrast: my top row is 😀 🎉 🌟, while B and C have the same three emojis in different arrangements. The middle row and center column remain our shared ordered sequences.
+
+A: In my grid, 🚀 is directly below 😀 in the left column. Is that true in either of your grids too?
+
+B: No—🚀 is below 🌺 in my left column, not 😀.
+
+C: Not in mine either—🚀 is directly below 💡 in my left column.
+
+A: In my grid, 🌟 and 🌺 are the two right-hand corners. How are those two arranged in yours?
+
+B: My right-hand corners are 💡 at the top and 😀 at the bottom.
+
+C: A, my right-hand corners are 🌺 at the top and 🌟 at the bottom.
+
+B: In my bottom row, 🌟 is immediately left of 🎵. Is that arrangement in either of your grids?
+
+A: Not in mine—my bottom row is 💡 🎵 🌺.
+
+C: Not in mine—my bottom row is 😀 🎵 🌟, so 🌟 is immediately to the right of 🎵.
+
+B: In my top row, 🎉 is immediately left of 💡. Does either of you have that same adjacent pair in that order?
+
+A: In my top row, 🎉 sits between 😀 and 🌟. Does either of your grids have those same three across the top, even in a different order?
+
+C: We’ve mapped the shared edge-center cells. A, your top row has 😀 🎉 🌟, unlike my 💡 🎉 🌺—do you and B share any other pair of emojis along a row or column?
+
+B: In my top row, 🌺 is immediately left of 🎉. Does either of you have that pair in the same order?
+
+A: Our left columns all have 🚀 in the middle, but the corner emojis differ. B, your left column is 🌺 🚀 🌟—C, what’s yours?
+
+C: My left column is 💡 🚀 😀.
+
+A: That confirms the left columns differ at the corners, though 🚀 is in the middle for all of us. We’ve got the two shared sequences: the middle row and center column.
+
+B: One other detail: in my grid, 💡 is in the top-right corner and 🌟 is in the bottom-left. Are those positions swapped in either of your grids?
+
+A: A: Yes—those positions are swapped in my grid: 🌟 is top-right and 💡 is bottom-left.
+
+C: In my grid, 💡 is top-left and 🌟 is bottom-right, so they’re on the opposite diagonal from B’s positions.
+
+B: Right—A has those two corners swapped from mine. The shared ordered sequences remain the middle row 🚀 🎨 🌈 and center column 🎉 🎨 🎵.
+
+A: In my top row, 😀 is immediately left of 🎉. Does either of you have that same adjacent pair?
+
+B: In my left column, 🌺 is directly above 🚀. Does either of you have that same vertical pair?
+
+C: Not in mine—my left column is 💡 🚀 😀, so 💡 is directly above 🚀.
+
+A: My bottom row is 💡 🎵 🌺, with 🎵 between 💡 and 🌺. Do either of you have that same adjacent pair?
+
+B: In my bottom row, 🎵 is immediately left of 😀. Does either of you have that same adjacent pair in that order?
+
+C: Not in mine—my bottom row is 😀 🎵 🌟, so 🎵 is immediately right of 😀.
+
+A: In my right column, 🌟 is directly above 🌺. Is it that way in either of your grids?
+
+B: No—my right column is 💡 🌈 😀, so 🌟 isn’t directly above 🌺.
+
+C: Not in mine either—my right column is 🌺 🌈 🌟.
+
+A: Interesting, 💡 and 🌺 share a row in all our grids—bottom row for me, top row for B and C. Is that right?
+
+B: Yes—💡 and 🌺 are both in my top row, as in C’s; yours are together in the bottom row.
+
+A: I notice 💡 and 🌟 are opposite corners in each grid. Is that right?
+
+B: Yes—💡 and 🌟 are opposite corners in my grid too: 💡 top-right, 🌟 bottom-left.
+
+A: In my grid, 🎵 is diagonally down-right from 🚀. Is it in that position in your grids too?
+
+B: Yes—🎵 is diagonally down-right from 🚀 in my grid too.
+
+C: Yes, in my grid too: 🎵 is one step diagonally down-right from 🚀.
+
+B: In my grid, 🌟 is diagonally down-left from 🎨. Is it in that position in either of yours?
+
+C: One more contrast: 😀 is directly below 🚀 in my left column, while A has 😀 directly above 🚀; B has them in different columns.
+
+C: B, no—🌟 is diagonally down-right from 🎨 in my grid; 🎵 is diagonally down-left.
+
+B: C is right—🌟 is diagonally down-left from 🎨 in my grid, not down-right.
+
+A: In my top row, 🌟 is immediately to the right of 🎉. Does either of you have that same adjacent pair?
+
+B: No—my top row is 🌺 🎉 💡, so 🌟 isn’t immediately to the right of 🎉.
+
+C: Not in mine either—my top row is 💡 🎉 🌺, with 🌺 to the right of 🎉.
+
+A: In my grid, 🎉 is diagonally up-left from 🌈. Is it in that position in yours too?
+
+B: Yes—🎉 is diagonally up-left from 🌈 in my grid too.
+
+C: Yes—in my grid too, 🎉 is diagonally up-left from 🌈.
+
+C: In my grid, 🎨 is diagonally up-right from 😀. Is it in that position in either of yours?
+
+B: In my grid, 💡 is directly above 🌈 in the right column. Does either of you have that same vertical pair?
+
+A: No—my right column is 🌟 🌈 🌺, so 💡 isn’t directly above 🌈.
+
+A: In my right column, 🌟 is directly above 🌈. Does either of you have that same vertical pair?
+
+B: Yes—my right column is 💡 🌈 😀, so 💡 is directly above 🌈 in my grid too.
+
+C: C: In my right column, 🌺 is directly above 🌈, not 💡 or 🌟.
+
+A: One more detail from my grid: 🎨 is surrounded by 🎉 above, 🎵 below, 🚀 on the left, and 🌈 on the right.
+
+C: In my upper-right 2×2 block, the emojis are 🎉 🌺 above 🎨 🌈. Does either of your grids have that same arrangement?
+
+B: In my grid, 💡 and 😀 are vertically aligned in the right column, with 🌈 between them. Is that true in either of yours?
+
+B: A and C have 🌈 in the right column too, but not 💡 above and 😀 below it.
+
+B: My top-left 2×2 block is 🌺 🎉 above 🚀 🎨. Does either of you have that same arrangement?
+
+C: My top-left 2×2 block is 💡 🎉 above 🚀 🎨—same arrangement except I have 💡 where you have 🌺.
+
+A: My top-left 2×2 block is 😀 🎉 above 🚀 🎨, so it differs from both yours only in the top-left emoji.
+
+A: My bottom-right 2×2 block is 🎨 🌈 above 🎵 🌺. Does either of you have that same arrangement?
+
+B: Mine is 🎨 🌈 above 🎵 😀, so the bottom-right emoji differs: I have 😀 where you have 🌺.
+
+C: C’s bottom-right 2×2 block is 🎨 🌈 above 🎵 🌟, so all three grids differ only in that block’s bottom-right emoji.
+
+A: My bottom-left 2×2 block is 🚀 🎨 above 💡 🎵. Does either of you have that same arrangement?
+
+B: My bottom-left 2×2 block is 🚀 🎨 above 🌟 🎵, so it differs from yours only in the bottom-left emoji.
+
+C: My bottom-left 2×2 block is 🚀 🎨 above 😀 🎵, so it differs from A’s only in the bottom-left emoji too.
+
+B: My upper-right 2×2 block is 🎉 💡 above 🎨 🌈. Does either of you have that same arrangement?
+
+A: In my grid, 🌟 is diagonally up-right from 🎨. Where is 🌟 relative to 🎨 in yours?
+
+C: In my grid, 🌟 is diagonally down-right from 🎨.
+
+B: B: 🌟 is diagonally down-left from 🎨 in my grid.
+
+A: In my grid, 🌟 is at the top-right and 🎵 is bottom-center. Where is 🌟 relative to 🎵 in yours?

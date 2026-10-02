@@ -1,0 +1,117 @@
+# 9/28/26 - All LLMs (mixed:  A: gpt-5-nano B: gpt-5.4-nano C: gpt-6-luna) - simple_text1 emojis Set2-
+#
+#
+# turn 1 A (after greetings) gives full grid and uses broadcast `your grids`
+# C follows with just grid information and no comparisons
+# A does comparison and identifies shared middle row and middle column - need confirmation turn from B to finish at this point
+# and addresses B indirectly but clearly directed at B 'are these shared sequences in your grid? (singular)
+# C intervenes before B replies answering the question directed (indirectly) to B
+# B then replies and confirms the match in its emoji grid - 'Yes my grid also has..." and gives full grid - does not complete comparison as
+# note that the two lines have been identified
+# A respons with "one more detail" which is not new it is just focused on shared central item already clear
+# C picks up broader search and goes for diagonals
+# B responds and suggests shared diagonal but order is different C  💡 🎨 🌟 goes from bottom left to TR and B has this TR to BL!
+
+
+B: Hi, I’m here!
+
+A: Hi, I’m here!
+
+C: Hi, I’m here!
+
+A: My grid is: 😀 🎉 🌟 / 🚀 🎨 🌈 / 💡 🎵 🌺. What are the rows in your grids?
+
+C: My rows are 💡 🎉 🌺 / 🚀 🎨 🌈 / 😀 🎵 🌟.
+
+A: C and I share the middle row 🚀 🎨 🌈 and the middle column 🎉 🎨 🎵. Are those also the two shared sequences in your grid?
+
+C: Yes—my grid also has the middle row 🚀 🎨 🌈 and the middle column 🎉 🎨 🎵.
+
+B: Yes, my grid also has the middle row 🚀 🎨 🌈 and middle column 🎉 🎨 🎵. My rows are 🌺 🎉 💡 / 🚀 🎨 🌈 / 🌟 🎵 😀.
+
+A: One more detail: 🎨 is at the center of all three grids, where the shared middle row and column cross.
+
+C: In my grid, the diagonals are 💡 🎨 🌟 and 🌺 🎨 😀. Do either of those match a diagonal in your grids?
+
+B: Both match my grid too: 💡 🎨 🌟 and 🌺 🎨 😀.
+
+A: My diagonals contain the same items, but in reverse order: 😀 🎨 🌺 and 🌟 🎨 💡. The middle row 🚀 🎨 🌈 and middle column 🎉 🎨 🎵 are the two sequences that match in the same order across all three grids.
+
+A: Our top rows differ, but 🎉 is in the top-center spot in all three grids.
+
+C: I notice both diagonals match B’s grid, but not A’s. The middle row and middle column are the two sequences shared across all three.
+
+B: Agreed: the two sequences shared in the same order across all three grids are the middle row 🚀 🎨 🌈 and middle column 🎉 🎨 🎵. The diagonals don’t match all three.
+
+A: In my grid, the four corners are 😀, 🌟, 💡, and 🌺.
+
+A: The edge-middle spots in my grid are 🎉 at the top, 🚀 on the left, 🌈 on the right, and 🎵 at the bottom. Are those the same in yours?
+
+C: Yes, those edge-middle spots match my grid: 🎉 top, 🚀 left, 🌈 right, and 🎵 bottom.
+
+A: Our corner items differ in order: mine go 😀 🌟 / 💡 🌺, while B’s go 🌺 💡 / 🌟 😀. How are the corners arranged in C’s grid?
+
+B: My corners are 🌺, 💡, 🌟, and 😀 too, though they’re arranged differently from A’s. Do your corner positions match mine?
+
+C: My corners are 💡 🌺 / 😀 🌟, so they don’t match B’s arrangement.
+
+A: The 😀 is at my top-left; C has it bottom-left and B bottom-right. That seems to account for three different corner positions—does that match what you see?
+
+C: My bottom row is 😀 🎵 🌟; B’s is the reverse, 🌟 🎵 😀, while A’s is 💡 🎵 🌺. Shall we note that only the middle row and column are shared in the same order?
+
+B: One extra detail: my left column is 🌺 🚀 🌟, so the outer items differ across our grids even though 🚀 stays in the middle.
+
+A: Yes, only the middle row and column are shared in the same order. Our top rows differ: mine is 😀 🎉 🌟, C’s is 💡 🎉 🌺, and B’s is 🌺 🎉 💡.
+
+B: My right column is 💡 🌈 😀; what do yours look like?
+
+C: My right column is 🌺 🌈 🌟.
+
+A: My right column is 🌟 🌈 🌺, so all three right columns differ. The shared middle column remains 🎉 🎨 🎵.
+
+A: My left column is 😀 🚀 💡. C, what’s yours?
+
+B: My 🌺 and 🌟 are both in the left column, with 🚀 between them. Do either of your grids have the same pair of corner items aligned vertically?
+
+C: My left column is 💡 🚀 😀. It has 💡 and 😀 as the corner pair, the same pair as A’s left column but reversed.
+
+A: My bottom row is 💡 🎵 🌺; C’s is 😀 🎵 🌟, and B’s is 🌟 🎵 😀. So the bottom rows differ, though 🎵 stays in the center.
+
+B: Looks like each of us has a different item in the top-left: A has 😀, C has 💡, and I have 🌺.
+
+A: A new comparison: 💡 is bottom-left in my grid. Where does it appear in yours?
+
+C: In my grid, 💡 is top-left.
+
+B: 💡 is at the top-right in my grid.
+
+C: In my grid, 🌟 is at the bottom-right. Where is it in yours?
+
+B: In my grid, 🌟 is bottom-left. Where does it appear in yours?
+
+A: 🌟 is at the top-right in my grid.
+
+A: One more check: the four corners in my grid are 😀 top-left, 🌟 top-right, 💡 bottom-left, and 🌺 bottom-right. That matches the corner positions C described, but differs from B’s.
+
+C: Small correction: my corners are 💡 top-left, 🌺 top-right, 😀 bottom-left, and 🌟 bottom-right. They don’t match A’s arrangement.
+
+C: In my grid, 🌺 is at the top-right. Where is it in yours?
+
+B: 🌺 is at the top-left in my grid.
+
+A: 🌺 is bottom-right in my grid, so it’s in a different corner for each of us: B top-left, C top-right, and me bottom-right.
+
+B: Another detail: 🌺 and 💡 are at opposite ends of my top row, with 🎉 between them. Are your top-row end items different?
+
+A: Yes—my top-row ends are 😀 and 🌟, unlike B’s 🌺 and 💡. C’s are 💡 and 🌺.
+
+C: Clockwise from my top-left, my corner items are 💡, 🌺, 🌟, 😀. That confirms my corner arrangement.
+
+B: It looks like the center and all four edge-middle spots match across our grids; only the corner arrangement changes. Is that a fair summary?
+
+A: Yes. The center 🎨 and all four edge-middle items match in position across our grids; only the corner items are rearranged. The two shared ordered sequences are the middle row 🚀 🎨 🌈 and middle column 🎉 🎨 🎵.
+
+A: Yes, that’s right: the center and four edge-middle items match in all three grids; only the corner positions differ. The shared middle row and column are 🚀 🎨 🌈 and 🎉 🎨 🎵.
+
+
+# STOPPED before agreement reached as seemed like discussion had diverged from task goals

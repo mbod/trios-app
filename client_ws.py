@@ -18,11 +18,39 @@ from dotenv import load_dotenv
 
 _ = load_dotenv()
 
+# Testing with a range of openai models initially
+# TODO: generalize async handler to work with any LLM
+
 #MODEL_NAME = "gpt-4o-2024-11-20"
-MODEL_NAME = "gpt-5-nano"
+#MODEL_NAME = "gpt-5-nano"
 #MODEL_NAME = "gpt-4o-mini"
-MODEL_NAME = "gpt-4.1-nano"
-MODEL_NAME = "gpt-5.6-luna"
+#MODEL_NAME = "gpt-4.1-nano"
+#MODEL_NAME = "gpt-5.6-luna"
+MODEL_NAME = "gpt-5.4-nano"
+MODEL_NAME = "gpt-6-luna"
+
+MODEL_DICT = {
+    'A': 'gpt-5-nano',
+    'B': 'gpt-5.4-nano',
+    'C': 'gpt-6-luna'
+    }
+
+
+MODEL_DICT = {
+    'A': 'gpt-3.5-turbo',
+    'B': 'gpt-3.5-turbo',
+    'C': 'gpt-3.5-turbo'
+
+}
+
+MODEL_DICT = {
+    'A': 'gpt-6-luna',
+    'B': 'gpt-6-luna',
+    'C': 'gpt-6-luna'
+}
+
+
+
 
 
 ROOM = "test"
@@ -30,9 +58,17 @@ SK = "coll@bplan!"
 
 # number of differences between the three images
 # this could vary for different rounds
-DIFFERENCE_CNT = 11
+DIFFERENCE_CNT = 6
 
 LOG = logging.getLogger(__name__)
+
+
+#    Your task is to identify the differences
+#    between your versions. There are {difference_cnt} differences between the three images.
+#    The task for the group is to identify and agree upon those {difference_cnt} differences.
+#    Once your team has identified all the differences finish the task.
+
+
 
 
 class Client:
@@ -40,10 +76,43 @@ class Client:
     You are a member of a group of 3 people working on a task together.
     You are Participant {part_id}.
 
-    Each of you has a similar image. Your task is to identify the differences
-    between your versions. There are {difference_cnt} differences between the three images.
-    The task for the group is to identify and agree upon those {difference_cnt} differences.
-    Once your team has identified all the differences finish the task.
+    Each of you has an image with 9 items arranged in a 3x3 grid.
+
+    1 2 3
+    4 5 6
+    7 8 9
+    
+    You all have the same 9 items but arranged differently.
+    However, there are two sequences of 3 items that are ordered
+    in the same way same across all three images.
+
+    Examples could be:
+    1. horizontal (e.g. row 1, items 1 2 3 are the same)
+    2. vertical (e.g. col 2, items 2 5 8 are the same)
+    3. diagonal (e.g. items 1 5 9 are the same)
+
+    Your task is to discuss together and describe the items in your
+    grid to each other so that you can agree upon the two shared
+    sequences.
+
+    Once you have agreed that you have identified the two shared
+    sequences the task is complete and you should stop.
+    
+    
+    For instance:
+
+    ImgA    ImgB     ImgC
+    -----   -----    -----
+    P Q R   P Q R    P Q R
+    Z S X   M S N    N S Z
+    M N T   X Z T    M X T
+
+    Each of you has one of the three images to complete the task
+    you would go around and describe your images until you agreed
+    in the above example:
+    1. top row = P Q R
+    2. TL-BR diagonal = P S T
+    are the same across your three images.
     
     Behave like an engaged member of a small group collaborating on a task:
     - Do not respond to every message.
@@ -52,7 +121,8 @@ class Client:
     - Avoid repeating yourself.
     - Let others speak.
     - If you just spoke, wait before speaking again.
-    - Help keep the task on track 
+    - Help keep the task on track
+    - When you all agree the task is complete you should stop
 
     IMAGE:
     {image}
@@ -64,6 +134,10 @@ class Client:
                  ws_url: str,
                  socketio_path: str):
         self.id = id
+
+
+        MODEL_NAME = MODEL_DICT[id]
+        
         self.room = room
         self.ws_url = ws_url
         self.socketio_path = socketio_path
@@ -71,6 +145,9 @@ class Client:
 
         # load the specific image file for instance participant
         self.image = open(f"static/images/{image_file}").read()
+
+        print(f'AGENT {self.id} - IMAGE {self.image}')
+        
         self.prompt = self.SYSTEM_PROMPT.format(
             part_id=self.id,
             difference_cnt=DIFFERENCE_CNT,
@@ -179,10 +256,9 @@ class Client:
     
         Continue the task naturally. Do one of these:
         - ask about a new concrete feature in your image
-        - summarize one difference already found and move to another feature
+        - summarize one difference or similarity already found and move to another feature
         - mention a new visual detail that has not been discussed yet
     
-        Do not repeat the bus color discussion unless necessary.
         Keep it brief and conversational.
     
         Output valid JSON only:
@@ -329,9 +405,9 @@ class Client:
         Decide what to say next in the group discussion.
 
         You may:
-        - describe a feature in your image
-        - ask another participant about a feature
-        - suggest a possible difference
+        - describe a feature/item in your image
+        - ask another participant about a feature/item
+        - suggest a possible difference or similarity
         - summarize what the group has established
         - wait silently if you have nothing useful to add
 

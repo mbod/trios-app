@@ -24,6 +24,15 @@ async def start_agent_handler(request):
     data = await request.json()
     agent_id = data.get("agent_id")
     room_id = data.get("room_id")
+    image_path = data.get("image_path")
+
+    print(f'IMAGEPATH {image_path}')
+    
+    if not image_path:
+        image_path = "image"
+
+    else:
+        image_path = "/".join(image_path)
 
     if not agent_id or not room_id:
         return web.json_response({"error": "agent_id and room_id required"}, status=400)
@@ -38,7 +47,8 @@ async def start_agent_handler(request):
     client = Client(
         id=agent_id,
         room=room_id,
-        image_file=f"image{agent_id}_nocomments.svg",
+        #image_file=f"image{agent_id}_nocomments.svg",
+        image_file=f"{image_path}{agent_id}.svg",
         ws_url=BASE_WS_URL,
         socketio_path=SOCKETIO_PATH
     )

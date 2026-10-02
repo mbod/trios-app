@@ -1,6 +1,18 @@
 {% extends 'base.html' %} {% block content %}
 
-<h2 id="home-header">Room {{ room }}</h2>
+
+<div id="top-bar">
+
+  <div id="home-header">Room {{ room }}</div>
+  <div id="completion-indicators">
+    Completion Message: 
+    {% for part in participants %}
+    <label>{{part}}</label>
+    <input type="radio" name="complete-{{part}}" disabled/>
+    {% endfor %}
+  </div>
+  
+</div>
 
 <div id="room-container">
 
@@ -9,8 +21,9 @@
   </div>
   <div id="stimuli">
     {% for part in participants %}
-        <div class="from{{part}} stimImage">
-        <img src="{{url_for('static', filename='images/image'+part+'.svg')}}"/>
+    <div class="from{{part}} stimImage">
+      
+        <img src="{{url_for('static', filename='images/'+imagepath+part+'.svg')}}"/>
         </div>
     {% endfor %}
 

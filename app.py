@@ -65,10 +65,14 @@ def chatroom():
         PARTICIPANTS = [ request.args.get('user_id') ]
     else:
         PARTICIPANTS = ['A','B','C']
-    
+
+    imagepath = request.args.get('imagepath', 'image')
+        
     return render_template('chatroom.html',
                            room=room,
-                           participants=PARTICIPANTS)
+                           participants=PARTICIPANTS,
+                           imagepath = imagepath
+                           )
 
 
 
@@ -114,11 +118,17 @@ def add_agent(agent_id, room_id):
     if not isinstance(auth_check, dict):
         return auth_check
 
+
+    imagepath = request.args.get('imagepath', 'image')
+    print(f'--- imagepath {imagepath.split("/")}')
+    
     # Delegate spawning to the Agent Manager daemon
     try:
         r = requests.post(
             f"{AGENT_MANAGER_URL}/start",
-            json={"agent_id": agent_id, "room_id": room_id},
+            json={"agent_id": agent_id,
+                  "room_id": room_id,
+                  "image_path": imagepath.split('/')},
             timeout=3
         )
         return jsonify(r.json()), r.status_code

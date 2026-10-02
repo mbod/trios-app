@@ -1,0 +1,247 @@
+# 9/30/26 - All LLMs (mixed:     A: gpt-6-luna, B: gpt-5-nano, C: gpt-3.5-turbo) animal_tangrams2 set1-mono 
+#
+#  smallest/older model seems to take less turns?
+#  but still matches the detail and turns of the others responding to questions etc.
+
+
+
+
+
+
+C: Hi, I’m here!
+
+B: Hi, I’m here!
+
+A: Hi, I’m here!
+
+B: One detail from my grid: the top-middle tile has a small diamond near its center, with a long triangular shape extending across the bottom.
+
+A: In my bottom-right tile, there’s a prominent long diagonal shape slanting down toward the right, with smaller angled pieces clustered on its left. Does anyone have that one, and where is it in your grid?
+
+B: I also notice the bottom-right tile has a long diagonal shape running down toward the lower-right, with a small diamond-like shape near its center.
+
+C: In my bottom-middle tile, there’s a clear square near the upper-right, with a diagonal wedge attached on its left. Does either of you have a similar feature?
+
+A: In my middle-left tile, there’s a small diamond near the right edge, beside several long angled wedges. Does anyone have that tile feature too?
+
+B: Yes, I have that feature in my bottom-middle tile: a square at the upper-right with a diagonal wedge coming in from the left.
+
+A: I can confirm the square-and-wedge tile is also in my bottom-middle.
+
+A: In my top-left tile, there’s a small diamond near the upper middle, beside a tall narrow shape along the left edge. Does anyone see that feature?
+
+B: A new detail: my top-right tile has a small square near the bottom, with several sharp triangular wedges clustered above and to its right. Does that look familiar?
+
+B: A, I have that same small diamond and tall narrow shape in my top-left tile too.
+
+A: In my center tile, there’s a small square in the lower-left, beneath a broad triangle spanning the upper half. Does anyone have that arrangement too?
+
+B: Yes, I have that arrangement in my center tile: a small square at the lower-left beneath a broad triangle.
+
+A: One new detail: my bottom-left tile has a small square near the lower center, with a broad diagonal wedge rising above and to its left. Does anyone have that one?
+
+B: Another detail: my top-right tile has a small square near the lower middle, with a tall angular outline running along its left side.
+
+B: So far, A and I both recognize matching tiles in the top-left, center, and bottom-middle positions. C, do any of those match your grid too?
+
+A: My middle-right tile has a small diamond near the top center, above two broad triangular wedges meeting across the middle. Does anyone have that one?
+
+C: One new detail: my middle-left tile has a large vertical diamond/hourglass shape in the center, with a smaller diamond just to its left. Does that ring a bell?
+
+A: Yes, I have that feature in my top-right tile: the large vertical hourglass with a smaller diamond just to its left.
+
+C: A new detail in my top-middle tile: a tall hooked shape drops from the upper-left and turns right across the upper half. Does anyone recognize that feature?
+
+B: In my bottom-left tile, two large opposing triangular wedges meet near the center, with a small diamond just to their lower-left. Does anyone see that feature?
+
+A: In my top-right tile, a small triangle sits near the upper-right corner, above a slanted wedge. Does anyone have that feature?
+
+B: Yes, I see that feature in my top-right tile too: a small triangle at the upper-right above a slanted wedge.
+
+B: In my middle-right tile, a small diamond sits near the right edge, with a broad triangle just to its left. Does anyone recognize that arrangement?
+
+A: My middle-right tile has a similar broad triangle, but the small diamond is near the top center, above two opposing wedges—not near the right edge.
+
+B: That sounds different from my bottom-left tile: mine has a small diamond to the lower-left of the opposing wedges, not above them.
+
+A: Another detail in my top-left tile: a broad triangle fills much of the lower-right corner. Does anyone recognize that?
+
+C: One more detail from my top-left tile: there’s a small triangular cap along the upper edge, to the right of the tall narrow shape. Does that help identify it?
+
+C: Yes, my top-left tile matches that too: it has the small diamond and tall narrow shape on the left, with a broad triangle filling the lower-right.
+
+B: C, I have that large central hourglass with a smaller diamond to its left in my bottom-left tile.
+
+A: One new detail: my bottom-left tile has a large hooked shape running down the left side and turning inward near the bottom, with a small square just to its right. Does anyone recognize it?
+
+C: I recognize that in my middle-right tile: it has the hooked shape along the left and a small square to its right.
+
+C: My bottom-left tile has two broad opposing triangles meeting across the center, with a small diamond directly above them. Does anyone recognize that arrangement?
+
+A: In my bottom-middle tile, there’s a long slanted strip near the upper-left, pointing toward the center. Does anyone recognize that feature?
+
+B: A new detail from my middle-left tile: a small diamond sits near the upper center, above two broad triangles meeting along a horizontal edge. Does that look familiar?
+
+B: In my bottom-right tile, a broad triangle sits along the top edge, with a small diamond just below it. Does that match anyone’s?
+
+A: One more detail: my middle-left tile has a broad triangular wedge stretching across the upper-right, with a small diamond just below it. Does that match anything in your grids?
+
+C: A, that matches my bottom-middle tile too: it has a long slanted strip at the upper-left pointing inward.
+
+A: In my top-right tile, a small diamond sits between two large opposing triangular wedges. Does anyone recognize that arrangement?
+
+A: In my top-right tile, the small diamond is just to the left of the opposing wedges, rather than between them. Could we be looking at the same motif from different angles?
+
+A: One other feature in my top-right tile: a narrow bent strip descends from near the upper edge toward the center. Does anyone see that too?
+
+C: One new detail: my bottom-right tile has a broad triangle at the upper-left pointing down and right, with a small diamond just below it. Does anyone recognize that?
+
+B: Yes, that matches my bottom-right tile: the broad triangle is at the upper-left, with the small diamond just below and to its right.
+
+B: One detail I haven’t mentioned: my top-left tile has a small triangular cap at the very upper-left edge, separate from the diamond and tall shape. Does anyone else have that?
+
+A: In my bottom-right tile, there’s also a narrow wedge reaching the far-right edge around mid-height. Does anyone see that feature?
+
+A: Yes, my top-left tile has that small triangular cap at the upper-left, alongside the diamond and tall narrow shape.
+
+B: I notice a small square near the lower-right of my top-right tile, with a tall angular shape just above it. Does anyone recognize that feature?
+
+A: I also notice a small diamond in my top-middle tile, with a broad triangular wedge extending from it toward the right edge. Does anyone see that feature?
+
+C: In my middle-left tile, a small diamond sits near the left edge, beside two large opposing triangles that meet in the center. Does anyone recognize that arrangement?
+
+B: In my bottom-left tile, there’s a small triangular cap near the upper-right edge, above a tall shape running down the center. Does anyone recognize that feature?
+
+A: One new detail: my bottom-left tile has a small right-angled triangular cap near the upper-right, beside the tall diagonal shape. Does anyone recognize it?
+
+A: I see that too in my bottom-left tile: a small triangular cap near the upper-right, above a tall shape running down the center.
+
+A: Another feature in my bottom-middle tile: a small square near the upper-right, with a broad angular wedge just below it. Does anyone recognize that?
+
+C: My top-middle tile also has a broad triangle along the bottom edge, with its point aimed upward near the center. Does anyone recognize that?
+
+B: In my bottom-left tile, a small diamond sits to the left of a tall vertical strip, with a triangular point extending above it. Does anyone recognize that arrangement?
+
+B: C, your top-middle tile’s broad bottom-edge triangle, pointing up near the center, matches my top-middle tile.
+
+B: In my middle-right tile, there’s a small square near the lower center, with a short triangular wedge extending to its right. Does that look familiar?
+
+C: Another detail: my top-middle tile has a small triangular wedge along the left edge, around mid-height. Does anyone recognize that?
+
+A: One more detail from my bottom-right tile: a narrow angled strip runs down the left side of the larger overlapping wedges. Does anyone see that feature?
+
+A: That left-edge wedge is in my top-middle tile too, along with the broad triangle pointing up from the bottom edge.
+
+B: That matches my top-middle tile too: it has the broad triangle pointing up from the bottom edge and a small wedge along the left.
+
+A: One detail from my top-middle tile: a long, low parallelogram runs along the lower-right edge, just beneath the central diamond. Does anyone recognize that?
+
+C: In my center tile, a small right-pointing triangle protrudes from the right edge around mid-height. Does anyone recognize that detail?
+
+B: C, my center tile has a small right-pointing triangle near the right edge at mid-height too.
+
+A: In my bottom-middle tile, a broad triangular cap fills the upper-right corner, just above the square. Does anyone else see that?
+
+B: Yes, I see that in my bottom-middle tile too: a broad triangular cap in the upper-right, directly above the square.
+
+A: In my top-left tile, there’s a small downward-pointing triangle near the upper-right edge. Does anyone see that detail?
+
+B: In my bottom-left tile, a short diagonal strip points toward the lower-right corner, below the center. Does anyone recognize that detail?
+
+A: In my center tile, a tall narrow diamond-shaped strip sits just right of the broad triangles, above the small square in the lower-left. Does anyone recognize that detail?
+
+C: In my top-right tile, a large triangle reaches in from the upper-right corner, with a small diamond near the right edge below it. Does that look familiar?
+
+B: C, that sounds like my top-right tile too: it has a large triangular piece at the upper-right and a diamond-like shape just below it near the right edge.
+
+A: One detail in my bottom-right tile: a broad triangle reaches the top edge, with its point near the upper-middle and its base slanting toward the central diamond. Does anyone recognize that?
+
+A: My top-right has a large upper-right triangle too, but its small diamond is left of center, not near the right edge—so it may be a different tile.
+
+B: My top-right has a small triangular cap at the upper-right, but below it is a long horizontal wedge rather than a small diamond. That may be a different tile.
+
+A: My middle-right tile has a long slanted strip along the bottom-right edge, separate from the large triangles. Does anyone have that feature?
+
+B: My middle-right tile has a small downward-pointing triangle near the lower-right, but I don’t see a separate long strip along the bottom-right edge. It may be a different tile.
+
+C: A, my bottom-right tile also has a narrow wedge reaching the right edge around mid-height. Does yours have the diamond just to its left?
+
+A: Yes, my bottom-right tile has that narrow wedge at the right edge, with a diamond just to its left.
+
+B: Yes, my bottom-right tile has a narrow wedge reaching the right edge around mid-height, with a small diamond to its left.
+
+B: In my bottom-left tile, there’s also a long angled wedge reaching toward the right edge just below the center. Does anyone see that feature?
+
+C: In my center tile, a small upward-pointing triangle sits along the bottom edge, directly beneath the tall central diamond. Does anyone recognize that detail?
+
+A: One detail we haven’t compared: my middle-left tile has a large right-angled triangle in the upper-right, with its point extending down toward the center. Does anyone see that feature?
+
+C: One extra detail in my bottom-right tile: a small triangle touches the top edge, just above the diamond-shaped piece. Does that help distinguish it?
+
+A: In my bottom-right tile, a small triangle sits near the top edge, pointing upward, above the central diamond. Does anyone recognize that?
+
+B: Yes—my bottom-right tile has a small triangle touching the top edge, above and slightly left of the diamond.
+
+A: In my bottom-left tile, a small right-angled triangle sits at the upper-right edge, with a short horizontal base. Does that match a tile in either of your grids?
+
+B: Yes, my bottom-left tile has a triangle near the upper-right with a horizontal base along its lower edge.
+
+B: One detail we haven’t compared: my middle-left tile has a small diamond near the top, with a pointed piece on either side. Does anyone recognize that?
+
+A: One more detail from my bottom-left tile: a broad triangle fills the upper middle, with its point toward the upper-left and a long horizontal base. Does anyone have that feature?
+
+B: My bottom-left tile has a broad triangle with a long horizontal base near the top, but its point is closer to the upper-middle/right. It sounds similar, though the point direction may differ.
+
+B: One other detail in my middle-left tile: a small triangular cap sits at the upper-left, just above the central diamond. Does that help distinguish it?
+
+C: B, that sounds like my bottom-left tile: the diamond is near the top, with pointed pieces on either side and a small triangular cap above-left.
+
+B: In my bottom-middle tile, a broad right-triangular wedge fills the left side below the slanted upper-left strip. Does anyone recognize that feature?
+
+A: Yes, my bottom-middle tile has that slanted strip at the upper-left, with a broad triangular wedge filling the left side below it.
+
+C: In my middle-left tile, besides the opposing wedges and left-side diamond, a separate long diagonal strip slants down toward the lower-right edge. Does anyone else see that?
+
+B: Yes, my middle-left tile has that too: opposing wedges around a left-side diamond, with a long diagonal strip running down toward the lower-right edge.
+
+B: A fresh detail: my middle-left tile has a separate long wedge along the lower-right edge, pointing toward the corner. Does anyone else have that?
+
+A: One more detail: my top-middle tile has a long pointed wedge extending rightward from the central diamond. Does anyone else see that?
+
+C: I noticed my center tile has a second square near the lower-right, beneath the crossing wedges. Does anyone else have two squares in their center tile?
+
+C: I see one square in my center tile, at the lower-left; the shape beneath the crossing wedges on the lower-right looks like a diamond/trapezoid, not a second square.
+
+B: Agreed—my center tile has one clear square at the lower-left; the shape beneath the crossing wedges on the lower-right is a diamond-like quadrilateral, not a second square.
+
+A: In my bottom-right tile, a slim triangular wedge juts inward from the left edge around mid-height, beside the larger diagonal shapes. Does either of you see that too?
+
+C: My bottom-right tile has a slim triangular wedge on the left side around mid-height beside the larger diagonal shapes, though it doesn’t quite touch the edge. Could be the same feature.
+
+B: My bottom-right has a narrow triangular piece along the left side around mid-height, just below the central diamond, tapering down-right. That may be the feature you mean, though it doesn’t quite reach the edge in mine.
+
+C: In my top-right tile, a small triangle points right from the middle-right edge, just below the diamond. Does anyone see that feature?
+
+B: My top-right tile has a small triangle touching the right edge higher up; below it is a broad angular piece, not a clear diamond with a right-pointing triangle.
+
+B: My top-right has an angled band reaching the right edge just below the small upper-right triangle, but it’s broader than a small triangular point. It may be a similar feature, though I don’t see a separate diamond directly above it.
+
+A: In my middle-right tile, a small diamond near the upper center sits between a narrow vertical strip on its left and a triangular cap above-right. Does that detail ring a bell?
+
+A: Yes, that sounds like my middle-right tile too: the small diamond is beside a narrow upright strip, with a triangular cap above-right.
+
+A: One detail from my middle-right tile: two broad wedges meet near the lower center, forming a wide V beneath the small diamond. Does that match either of yours?
+
+B: My middle-right tile has a diamond near the upper-right, with angular wedges below and to its left, but they don’t clearly form a wide V beneath it.
+
+C: That’s similar to my bottom-left tile: a small diamond sits above two broad wedges, though in mine they meet along a horizontal edge rather than forming a clear V.
+
+A: In my top-left tile, a narrow wedge reaches the right edge at mid-height, just above the large lower-right triangle. Does anyone else see that?
+
+B: Yes, that matches my top-left tile: a narrow wedge reaches the right edge around mid-height, above the large lower triangle.
+
+B: One detail we haven’t compared: my bottom-right tile has a long slanted piece descending from near the upper-middle toward the lower-left, above a broader wedge extending toward the lower-right. Does that look familiar?
+
+C: Yes, my top-left tile has a narrow wedge reaching the right edge at mid-height, just above the broad lower-right triangle. That sounds like the same feature.
+
+C: That sounds like my bottom-right tile too: a long diagonal shape descends toward the lower-left above a broad wedge extending toward the lower-right.

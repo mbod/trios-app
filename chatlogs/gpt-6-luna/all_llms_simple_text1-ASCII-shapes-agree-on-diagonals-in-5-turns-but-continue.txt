@@ -1,0 +1,67 @@
+# 10/1/26 - All LLMs (gpt-6-luna) - simple_text1 set-3 ASCII shapes
+#
+# Takes 5 turns to get confirmed agreement - optimuum solution
+# but then discussion continues and becomes more and more specific
+# about details and asking for clarification on shape components
+
+
+
+B: Hi, I’m here!
+
+C: Hi, I’m here!
+
+A: Hi, I’m here!
+
+B: My grid is: row 1 has a butterfly-like symbol, a fish-like symbol, and a star; row 2 has a cat, a tree, and a diamond; row 3 has a sun, a house with a flat base, and a house with a curved base.
+
+C: My grid is: row 1 butterfly, cat, star; row 2 flat-based house, tree, fish; row 3 sun, diamond, curved-based house.
+
+B: Our grids share both diagonals: butterfly–tree–curved-base house (1–5–9) and star–tree–sun (3–5–7). A, do those match your grid too?
+
+A: Yes, both diagonals match my grid: butterfly–tree–curved-base house (1–5–9), and star–tree–sun (3–5–7).
+
+C: Both diagonals match my grid too. The two houses are distinguished by their bases—one flat, one curved. A, do you see those same diagonal sequences?
+
+A: I also notice the fish-like symbol has wavy lines, unlike the angular shapes of the houses and diamond.
+
+B: One more detail: the star at the top right is drawn as a small central dot with eight rays.
+
+A: The cat in the bottom-middle cell has pointed ears, a single round nose, and a U-shaped mouth.
+
+B: The sun in my bottom-left cell is drawn with horizontal and vertical rays, but no circular center.
+
+C: One detail in my bottom-middle symbol: it looks like a diamond outline with two asterisk-shaped marks inside.
+
+B: The diamond in the middle-right cell has two small star-like marks inside its outline.
+
+A: The butterfly in my top-left cell has two curved wing shapes around a small center—does that match yours?
+
+C: Yes, that matches mine: two curved wing shapes around a small center.
+
+B: The tree in the center cell has a single star at its tip, two broad tiers of branches, and a straight trunk.
+
+C: The flat-based house in my middle-left cell has a triangular roof, straight vertical walls, and a closed flat bottom.
+
+A: My right-middle house has a peaked roof, straight vertical sides, and a flat horizontal base.
+
+C: The fish in my middle-right cell has a small looped shape in the center, with wavy marks around it.
+
+B: The fish-like symbol in my top-middle cell has a small looped center, with wavy lines above and below it.
+
+B: One small detail: the curved-base house has sides that angle inward to form its base, unlike the other house’s straight flat bottom.
+
+A: In my center tree, each of the two branch tiers is three asterisks wide beneath the single star.
+
+C: The diamond in my bottom-middle cell has four straight sides meeting at sharp top and bottom points.
+
+A: I notice the sun also has diagonal rays, in addition to the horizontal and vertical ones. Do you see those too?
+
+B: Does your cat also have a short horizontal dash between the centered round mark and its U-shaped mouth?
+
+B: Yes, I see the diagonal rays too, along with the horizontal and vertical rays.
+
+C: Yes—the cat has a short horizontal dash beneath its round nose, above the U-shaped mouth.
+
+B: I notice the butterfly’s lower wings meet in a shallow V shape beneath its rounded upper wings.
+
+A: The butterfly’s center is drawn as a rounded “(^^)” shape between its upper wings; do yours show that too?

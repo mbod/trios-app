@@ -1,0 +1,231 @@
+# 9/30/26 - All LLMs (gpt-3.5-turbo) - simple_text1 set3- ASCII shapes
+#
+#  A in 14th turn (after greeting) shares solution "A: Looks like we’ve found the two shared diagonals: face–flower–flat-bottom house (1–5–9), and star cluster–flower–sunburst (3–5–7)."
+#  but other two do not pick up on this until turn 26:
+#  >  B: The sunburst is at 7 in my grid too. That confirms both shared diagonals: face–flower–flat-bottom house (1–5–9) and star cluster–flower–sunburst (3–5–7).
+#  >  C: We’ve confirmed both shared diagonals. The wavy fish is at 2 for B, 4 for A, and 6 for me; B, where is the diamond in your grid?
+#
+#
+
+
+C: Hi, I’m here!
+
+B: Hi, I’m here!
+
+A: Hi, I’m here!
+
+B: I see a cat at 4, a flower at 5, a diamond at 6, and two similar house-shaped items at 8 and 9 (their bottoms differ).
+
+A: In my grid, 7 is a sunburst, 8 is a cat, and 9 is a house with a flat bottom.
+
+C: In my grid, the cat is at 2, the sunburst at 7, the diamond at 8, and the flat-bottom house at 9. The house at 4 has a pointed roof.
+
+A: One detail we haven’t compared: item 1 has a little `(^^)` face between pointed marks. Does it show up in the same spot on either of your grids?
+
+B: Yes, that little face is at 1 in my grid too. Where is it in yours, C?
+
+C: Yes, it’s at 1 in my grid too.
+
+B: We’ve confirmed the face is at 1 in all three grids. Where does the star-shaped cluster at 3 appear in your grids?
+
+A: The star-shaped cluster is at 3 in my grid.
+
+C: The star-shaped cluster is at 3 in my grid too.
+
+B: Item 2 in my grid is a little fish-like shape made of `o~` and `~()`. Is that also at 2 in your grids? Then we may have the top row in common.
+
+B: My item 2 is the little wavy `o~ ~() o~ ~~~` figure. Where does that one appear in your grids?
+
+C: The wavy fish-like figure is at 6 in my grid, not 2.
+
+A: The wavy fish-like figure is at 4 in my grid.
+
+A: Looks like we’ve found the two shared diagonals: face–flower–flat-bottom house (1–5–9), and star cluster–flower–sunburst (3–5–7).
+
+A: The pointed-roof house is at 6 in my grid, while C has it at 4. B, which spot is yours in?
+
+B: The pointed-roof house is at 8 in my grid.
+
+B: The pointed-roof house is at 8 in my grid. So that one differs across all three of us.
+
+C: The pointed-roof house is at 4 in my grid. B, where is it in yours?
+
+C: I have the diamond-shaped figure at 8. A, where does it appear in your grid?
+
+B: We’ve got the pointed-roof house at 8 for me and 4 for C. Where is the diamond in your grid, A?
+
+A: The diamond-shaped figure is at 2 in my grid.
+
+B: The cat is at 4 for me, compared with 8 for A and 2 for C. We’ve also confirmed the flower is at 5 in all three—what position is the sunburst in your grids?
+
+C: The sunburst is at 7 in my grid.
+
+A: The sunburst is at 7 in my grid too. B, where is it in yours?
+
+B: The sunburst is at 7 in my grid too. That confirms both shared diagonals: face–flower–flat-bottom house (1–5–9) and star cluster–flower–sunburst (3–5–7).
+
+C: We’ve confirmed both shared diagonals. The wavy fish is at 2 for B, 4 for A, and 6 for me; B, where is the diamond in your grid?
+
+B: The diamond is at 6 in my grid.
+
+A: The cat at 8 in my grid has a little U-shaped tail. Do yours look the same?
+
+B: Yes, my cat at 4 also has the U-shaped tail.
+
+C: Yes, my cat at 2 has the same U-shaped tail.
+
+C: One other detail: my item 9 has a flat, U-shaped base, unlike the pointed-roof house at 4. Do yours look the same?
+
+B: Yes—my item 9 also has the U-shaped base; item 8 has the flat, straight bottom.
+
+C: My item 8 is a diamond outline with two asterisks inside. Do yours have the same detail?
+
+A: My sunburst at 7 has rays on both sides and a short vertical line beneath it. Do yours have the same detail?
+
+B: My diamond at 6 matches C’s description, and my sunburst at 7 has the same rays and short vertical line beneath.
+
+A: The flower at 5 has a single asterisk above two rows of three, with a straight stem below. Does it look the same in your grids?
+
+B: Yes, my flower at 5 has the same shape: one asterisk above two rows of three, with a straight stem.
+
+A: My diamond at 2 has two asterisks inside its outline. Does yours look the same, B?
+
+C: My item 3 is a cluster of seven asterisks arranged like a little starburst. Do yours look the same?
+
+B: Yes—my diamond at 6 has two asterisks inside, and my item 3 is the same seven-asterisk starburst.
+
+A: My cat at 8 has a single `o` centered on its face. Do yours have that too?
+
+B: Yes, my cat at 4 also has a centered `o` on its face.
+
+C: Yes, my cat at 2 also has a centered `o` on its face.
+
+A: The pointed-roof house at 6 in my grid has vertical sides and a double-underscore base. Do yours have the same detail?
+
+B: One small detail about item 1: the `(^^)` face has a `^^` line both above and below it. Do yours have that same framing?
+
+C: Yes, mine has `^^` above and below the `(^^)` face too.
+
+B: My pointed-roof house at 8 has vertical sides and a double-underscore base. Does yours look the same, A?
+
+A: The pointed-roof house at 6 has a `|__|` bottom—two underscores between the vertical sides. Does yours have the same base?
+
+A: Yes, my pointed-roof house at 6 has vertical sides and a `|__|` base too.
+
+A: One last detail: my wavy figure at 4 has `o~` at the top and again in the middle, with `~~~` along the bottom. Do yours have those same marks?
+
+C: Yes, my wavy figure at 6 has those same marks: `o~` at the top and middle, with `~~~` along the bottom.
+
+A: My flat-bottom house at 9 has an angled roof, straight vertical sides, and a `\__/` base. Does yours have the same shape?
+
+C: Yes, my item 9 has the same angled roof, straight sides, and `\__/` base.
+
+B: One detail we haven’t checked: my diamond at 6 has pointed top and bottom, with the two asterisks inside. Do yours have the same outline?
+
+A: Yes, my diamond at 2 has pointed top and bottom, with two asterisks inside.
+
+C: Yes, my diamond at 8 has the same pointed top-and-bottom outline and two asterisks inside.
+
+B: My cat at 4 has a `|_-_|` line beneath its face. Do yours have that detail too?
+
+A: My sunburst at 7 also has two short horizontal rays extending left and right at mid-height. Do yours?
+
+C: Yes, my sunburst at 7 has the same short horizontal rays extending left and right.
+
+A: My cat at 8 has a `|_-_|` line beneath its face, above the `\ U /` tail. Do yours have that same detail?
+
+C: My cat at 2 has pointed ears formed by `/\_/\`. Do yours have the same ear shape?
+
+B: Yes, my cat at 4 has the same pointed `/\_/\` ears.
+
+A: My item 1 has a `\ /` mark between the face and the lower `^^`. Do yours have that too?
+
+C: Yes, mine has the `\ /` mark between the face and the lower `^^` too.
+
+A: The wavy figure at 4 has `~()` on its second line. Do yours have the same little loop?
+
+B: My star cluster at 3 has one star at the top, then pairs of stars on the next three rows. Do yours have that same arrangement?
+
+B: Yes, my wavy figure at 2 also has `~()` on its second line.
+
+C: C: Yes, my star cluster at 3 has the same arrangement: one star at the top, followed by pairs on the next three rows.
+
+A: C, does your flower at 5 also have the straight `|` stem beneath the two rows of three asterisks?
+
+C: Yes, my flower at 5 has the straight `|` stem beneath the two rows of three asterisks.
+
+A: My pointed-roof house at 6 has an `/\` roof. Do yours have the same pointed roof?
+
+C: Yes, my pointed-roof house at 4 has the same `/\` roof.
+
+A: My cat at 8 has a `\ U /` shape at the bottom. Do yours have the same detail?
+
+B: Yes, my cat at 4 has the same `\ U /` shape at the bottom.
+
+C: My diamond at 8 has diagonal sides forming `/\` above the stars and `\/` below them. Does yours have the same detail?
+
+A: Yes, my diamond at 2 has diagonal sides forming `/\` above the stars and `\/` below them too.
+
+B: My wavy figure at 2 also repeats `o~` on its third line. Does yours have that same repeated mark?
+
+A: My sunburst at 7 also has diagonal rays slanting out from both the upper and lower sides. Do yours?
+
+C: Yes, my sunburst at 7 has diagonal rays slanting out from both the upper and lower sides too.
+
+A: The cat at 8 in my grid has vertical bars framing the centered `o` on its face (`| o |`). Do yours have that too?
+
+B: Yes, my cat at 4 has vertical bars framing the centered `o` too.
+
+C: Yes, my cat at 2 also has vertical bars framing the centered `o`.
+
+B: C, does your cat at 2 also have the `|_-_|` line beneath its face, above the `\ U /` shape?
+
+A: My pointed-roof house at 6 has `| |` for its sides, with no windows or door. Do yours have the same plain sides?
+
+C: Yes, my pointed-roof house at 4 has plain `| |` sides and a `|__|` base. And yes, my cat at 2 has the `|_-_|` line above its `\ U /` shape.
+
+A: B, does your flat-bottom house at 9 also have the `/\` roof and straight vertical sides?
+
+B: Yes, my flat-bottom house at 9 also has an `/\` roof and straight vertical sides.
+
+C: My flower at 5 has its straight stem centered beneath the asterisk rows. Is it centered that way in your grids too?
+
+A: Nice, the two houses are easy to distinguish: item 6 has a flat `|__|` base, while item 9 has the angled `\__/` base.
+
+A: Yes, the flower’s straight stem is centered beneath the asterisk rows in my grid.
+
+C: One small detail on item 1: the face is enclosed in parentheses, with two caret-shaped eyes. Does yours look the same?
+
+B: We’ve confirmed both shared diagonals. One useful distinction in my grid: the house at 8 has a straight `|__|` base, while the house at 9 ends in `\__/`.
+
+B: We’ve confirmed the two shared sequences: 1–5–9 (face, flower, house with the angled base) and 3–5–7 (star cluster, flower, sunburst).
+
+A: One last detail: my house at 9 has a completely blank interior—no windows or door. Is yours the same?
+
+C: One detail about my pointed-roof house at 4: it has a second pair of slanted sides (`/ \`) just below the `/\` roof. Do yours show that too?
+
+B: Yes, my pointed-roof house at 8 also has the second pair of slanted sides (`/ \`) below the roof. And my house at 9 has a blank interior.
+
+A: I notice the star cluster at 3 has its widest gap between the two stars on the third row. Do yours have that same spacing?
+
+B: Yes, mine has the widest gap between the two stars on the third row too.
+
+C: Yes, my star cluster at 3 has its widest gap between the two stars on the third row too.
+
+A: My item 1 has four lines, with the `\ /` mark separating the face from the lower `^^`. Is that layout the same in your grids?
+
+B: Yes—my item 1 has the same `(^^)` face enclosed in parentheses, with two caret-shaped eyes.
+
+C: One small detail on my sunburst: its top ray row is `\ | /`, with a vertical ray between the diagonals. Does yours match?
+
+A: Yes, my sunburst has the same `\ | /` top ray row.
+
+A: The star cluster at 3 ends with a pair of asterisks on its bottom row (` * * `). Is yours the same?
+
+C: The wavy figure at 6 ends with three tildes (`~~~`) on its bottom line. Does yours have the same ending?
+
+C: Yes, my star cluster at 3 also ends with a pair of asterisks on the bottom row.
+
+B: Yes, my wavy figure at 2 also ends with `~~~`.
+
+A: My diamond at 2 has a `\/` line closing the bottom beneath the two asterisks. Does yours match?

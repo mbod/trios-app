@@ -1,0 +1,83 @@
+# 9/29/26 - All LLMs (mixed: A: gpt-4.1-nano, B: gpt-5-nano, C: gpt-6-luna) - simple_text1 set1- letters
+
+#
+# B goes first and shares entire grid row by row
+# A follows and makes a comparison with B that finds the 2 lines
+# C follow and gives grid and confirms two shared lines
+# A picks up 'One difference...'
+# B joins in agreeing on difference but does restated the shared lines and
+#   suggests difference doesn't affect solution
+# B follows up with another turn 'one other detail...'
+# then discussion contines to focus on differences and individual items
+# even asking for clarification on items from others in spite of fact
+# all 3 grids are already accessible to all
+#
+
+
+B: Hi, I’m here!
+
+A: Hi, I’m here!
+
+C: Hi, I’m here!
+
+B: My grid is: top row x, M, l; middle row @, y, R; bottom row #, z, ~.
+
+A: My grid is x R y / @ l M / # z ~. Compared with B, the bottom row #, z, ~ and left column x, @, # match.
+
+C: My grid is x, y, M / @, R, l / #, z, ~. The two shared sequences are the bottom row #, z, ~ and the left column x, @, #.
+
+A: One difference: my center cell is lowercase l, while B has y there and C has R.
+
+B: Agreed: the shared sequences are the bottom row #, z, ~ and the left column x, @, #. The center differs across our grids, but that doesn’t affect the shared sequences.
+
+B: One other detail: my top-right cell is a lowercase l, while A and C have different symbols there.
+
+A: My top row is x, R, y; B and C have different top-row orders. Did either of you notice another matching diagonal?
+
+B: I don’t see another shared diagonal—the symbols after the top-left x differ. Does anyone see a matching sequence besides the bottom row and left column?
+
+A: I checked both diagonals; neither is shared across all three grids because the middle symbols differ.
+
+A: One other thing: we all have the same nine symbols, each appearing once; it’s only their positions that differ.
+
+B: One more difference: my right column is l, R, ~; A has y, M, ~ and C has M, l, ~.
+
+C: In my grid, the right column is M, l, ~, so that column isn’t shared either. The bottom row and left column still look like the two matches.
+
+A: The bottom-right tilde is in the same spot for all of us too; that anchors the shared bottom row. Shall we call the two shared sequences agreed?
+
+B: Agreed—the two shared sequences are the bottom row #, z, ~ and the left column x, @, #. We can call it complete.
+
+C: One more shared position: x is in the top-left in all three grids, so it’s the top of our matching left column.
+
+B: Quick detail: my top-right symbol is a lowercase “l,” not an uppercase “I.”
+
+A: One last detail: our top-left-to-bottom-right diagonals share x and ~ at the ends, but the center symbol differs: l in my grid, y in B’s, and R in C’s.
+
+C: One new detail in my grid: the top-left to bottom-right diagonal is x, R, ~.
+
+C: My top row is x, y, M; A’s is x, R, y, and B’s is x, M, l. So the top row isn’t another shared sequence.
+
+A: My other diagonal is y, l, #; B has l, y, # and C has M, R, #, so that one isn’t shared either.
+
+C: My middle row is @, R, l; A has @, l, M and B has @, y, R, so that row isn’t shared.
+
+B: My middle column is M, y, z; A’s is R, l, z, and C’s is y, R, z, so that column isn’t shared either.
+
+A: Our middle rows differ: mine is @, l, M; B’s is @, y, R; and C’s is @, R, l.
+
+B: I notice my grid has uppercase M and R, while x, y, z, and l are lowercase. Did you read the letter cases the same way?
+
+C: Yes. In my grid, M and R are uppercase; x, y, z, and l are lowercase.
+
+C: One visual detail: my middle-left symbol is an @. Is it in the same position in your grids too?
+
+B: Yes, @ is in the middle-left in all three grids; it’s part of the shared left column x, @, #.
+
+A: In my grid, the four corners are x, y, #, and ~; B and C have different symbols in the top-right corner.
+
+B: In my grid, uppercase M is top-middle; it’s middle-right in A’s and top-right in C’s.
+
+C: I also have a lowercase z in the bottom-center cell, between # and ~.
+
+A: Another quick comparison: the top-right cell is lowercase y in my grid, lowercase l in B’s, and uppercase M in C’s.

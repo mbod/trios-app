@@ -1,4 +1,4 @@
-
+# 9/22/26 - All LLMs (mixed:  A: gpt-5-nano B: gpt-5.4-nano C: gpt-6-luna)
 
 C: Hi, I’m here!
 

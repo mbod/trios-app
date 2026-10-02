@@ -1,0 +1,87 @@
+# 9/28/26 - All LLMs (mixed:  A: gpt-5-nano B: gpt-5.4-nano C: gpt-6-luna) simple_text1 Set3 ASCII shapes
+#
+#
+#
+
+
+A: Hi, I’m here!
+
+B: Hi, I’m here!
+
+C: Hi, I’m here!
+
+A: My grid is: 1 a face, 2 a diamond with stars, 3 a starburst, 4 a small fish-like doodle, 5 a flower, 6 a house with a flat base, 7 a sun-like face, 8 a cat, and 9 a house with a pointed base.
+
+A: One detail: items 6 and 9 are both house-like, but 6 has a flat base while 9 has an open, pointed base. Where do those appear in your grids?
+
+C: In my grid, the flat-base house is at 4, and the house with the open, pointed base is at 9.
+
+A: The cat is at 8 and the starburst at 3 in my grid. Where do those appear in yours?
+
+B: In my grid, the cat is at 4, the flower at 5, and the starburst at 3. Where do those appear in your grids?
+
+B: In my grid, the flat-base house is at 8 and the open, pointed-base house is at 9.
+
+A: I haven’t heard where the fish-like doodle (item 4 in my grid) appears in yours—where is it?
+
+C: In my grid, the cat is at 2 and the starburst at 3. Looks like the starburst is at 3 in all our grids.
+
+B: The fish-like doodle is at 2 in my grid. The starburst is also at 3.
+
+B: The fish-like doodle is at 2 in my grid. We’ve got the starburst at 3 in all three—where is the diamond with stars in yours?
+
+A: The diamond with stars is at position 2 in my grid.
+
+C: The diamond with stars is at position 8 in my grid.
+
+B: The sun-like face is at position 7 in my grid. Where does it appear in yours?
+
+A: The flower is at 5 in both my grid and B’s—C, where is it in yours?
+
+C: The flower is at 5 in my grid, and the sun-like face is at 7.
+
+A: The flower and sun-like face are both at 5 and 7 across our grids. C, where does the face from my position 1 appear in yours?
+
+B: The face is at position 1 in my grid. Where does it appear in yours?
+
+A: Mine is at position 1 too. C, where is the face in your grid?
+
+B: C, where is the fish-like doodle in your grid?
+
+C: The fish-like doodle is at position 6 in my grid.
+
+B: We’ve confirmed the starburst, flower, and sun-like face line up at 3–5–7. C, where does the face from A’s position 1 appear in your grid?
+
+A: We may have two shared diagonals: starburst–flower–sun at 3–5–7, and face–flower–pointed-base house at 1–5–9. C, where is the fish-like doodle in your grid?
+
+A: We’ve confirmed the pointed-base house is at 9 in all three grids. B, where is the diamond with stars in your grid?
+
+B: That confirms the two shared diagonals: starburst–flower–sun at 3–5–7, and face–flower–pointed-base house at 1–5–9. The fish-like doodle is at 2 for me, 4 for A, and 6 for C.
+
+A: We’ve also found the cat in different spots (8 for me, 4 for B, and 2 for C). B, where is the diamond with stars in your grid?
+
+B: The diamond with stars is at position 6 in my grid.
+
+B: We’ve got the shared diagonals 3–5–7 and 1–5–9. C, can you confirm the face is at position 1 in your grid too?
+
+C: The diamond with stars is at 8 for me, compared with 2 for A and 6 for B. Our two shared diagonals are still 3–5–7 and 1–5–9.
+
+A: We have the two shared diagonals confirmed. C, where is the face in your grid?
+
+B: We have the flat-base house at A6, B8, and C4. C, can you confirm where the face is in your grid?
+
+A: One visual detail we haven’t mentioned: item 7 has rays around its face and a short stem below.
+
+C: Yes, the face is at position 1 in my grid too. The sun-like face with rays and a short stem is at 7.
+
+A: The cat at my position 8 has pointed ears, a little face, and a curled-looking U-shaped base. Do yours have the same details?
+
+B: The fish-like doodle in my position 2 has a little wavy tail—does yours look the same?
+
+B: My item 6 is an outlined diamond with two stars inside; does yours look the same?
+
+A: One detail about the flower at my position 5: it has a short, straight stem beneath its clustered petals.
+
+C: Yes, my fish-like doodle at 6 also has wavy lines around a small central shape. The starburst at 3 is made of seven asterisks.
+
+A: The face at position 1 has two caret-shaped eyes above a rounded, smiling mouth.

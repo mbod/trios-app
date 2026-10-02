@@ -1,0 +1,289 @@
+# 9/30/26 - All LLMs (mixed:     A: gpt-4.1-nano, B: gpt-5-nano, C: gpt-4o-mini) animal_tangrams2 set1-mono 
+#
+# Let trial run for a longer period to see effects
+
+
+
+C: Hi, I’m here!
+
+B: Hi, I’m here!
+
+A: Hi, I’m here!
+
+A: My top-left item has a small diamond-like shape near the center, with triangular pieces extending above and to either side. Does anyone else have that arrangement?
+
+C: One detail from my grid: the bottom-right item has a fan-like cluster of broad wedge shapes, unlike the sharper diamond motifs in several other cells.
+
+B: My top-left has a similar central diamond with triangular extensions, so I think that’s the same item.
+
+A: Another feature in my grid: the middle-left item has a large right-angled triangular wedge in its upper-right corner. Does that stand out in either of your grids?
+
+B: In my bottom-middle item, there’s a small square near the upper-right, with a large diagonal shape extending down and left. Does anyone recognize that one?
+
+C: My top-middle item has a central diamond, a triangular point jutting to the left, and a broad wedge along the bottom. Does that match the diamond-like item you spotted?
+
+C: B, that square with the diagonal is in my bottom-middle too. A, I think your wedge item matches my top-right.
+
+A: My center item has two broad triangular wedges meeting near the middle, with a small square block at the lower left. Does that shape look familiar?
+
+C: A, yes—that matches my center item: two broad wedges and a small square at the lower left.
+
+A: One new detail: my bottom-left item has a large triangular wedge across the center, with a small square directly beneath it. Does anyone recognize it?
+
+B: My middle-right item has a diamond on the right, with several pointed wedges extending across the left and lower parts. Does that look familiar to either of you?
+
+A: We’ve confirmed the center motif matches; does anyone recognize my bottom-left item, with a broad central triangle and a small square beneath it?
+
+C: One new detail in my grid: the top-right item has a long triangular wedge pointing down from its upper-right corner. Does that resemble anything you’ve spotted?
+
+B: My middle-left item has a small diamond near the upper center, with two broad triangles meeting across the lower half. Does anyone recognize it?
+
+B: A, your bottom-left sounds like my top-right: it has a broad central triangle with a small square directly beneath it.
+
+C: My middle-right item has a tall triangular peak near the top, with a small square block directly below it. Does anyone recognize that arrangement?
+
+A: My top-middle item has a tall narrow shape on the left, with a long diagonal section extending down toward a broad triangular base. Does that ring a bell?
+
+B: My top-right item has a small square near the lower center, with broad triangular wedges meeting above it. Does that match anything in your grids?
+
+B: C, your middle-right sounds like my top-right: a small square below the tall triangular peak and broad wedges.
+
+C: My middle-left has a small diamond on the left, with a tall triangular wedge rising through the center. Does that look familiar?
+
+C: A new detail from my grid: the top-left item has a narrow upright wedge at the far left and a broad triangular point extending to the right. Does that ring a bell?
+
+A: I also notice a narrow upright strip along the left side of my top-left item, capped by a small triangle. Does that help identify it?
+
+B: C, your top-left sounds like my top-left too: it has a narrow upright strip at the left and triangular extensions across the rest of the shape. A’s description may match as well.
+
+B: My bottom-left has a small diamond on the left and two large triangular shapes meeting around a tall central bar. C, could that be your middle-left item?
+
+C: Yes, that sounds like my middle-left: it has a small diamond on the left and large triangular wedges meeting around a tall central bar.
+
+A: One extra detail in my bottom-right: the broad wedges seem to converge around a small diamond near the center. Does that help identify it?
+
+C: One detail we haven’t compared: my bottom-middle item has a long slanted strip along its upper-left edge. Does that look familiar?
+
+B: C, does the strip run diagonally down and right toward the center? That may match my top-middle item, which has a long diagonal section.
+
+B: My middle-left item has a small diamond near the top, above two broad triangular wedges. Does that match a cell in either of your grids?
+
+A: In my top-right, two large triangles meet near the center, with a small diamond just to their lower-left. Does that match a cell in either of your grids?
+
+A: B, that sounds closest to my bottom-right: it has a small diamond above broad triangular wedges, though the diamond sits a little left of center.
+
+B: My top-middle has a narrow upright section on the left, a long diagonal running down toward the right, and a broad triangular base. A, could that be your top-middle item?
+
+A: My middle-right has a small diamond between two upright triangular points near the top, above a pair of broad wedges. Does that match anything in your grids?
+
+C: A, that may be my top-right item: it has a diamond among several broad triangular wedges, though mine places the diamond on the right.
+
+A: My middle-right’s diamond is near the upper center, between two small triangular points, with broad wedges below. Since your top-right puts the diamond on the right, it may be a different item.
+
+A: My bottom-middle item has a clear square near the upper-right, with a large triangular point directly above it. Does that look familiar?
+
+C: My bottom-right has a small tilted diamond on the left, with broad wedges slanting down and right from it. Does that match anything you’ve noticed?
+
+B: C, that sounds like my bottom-right too: a small diamond left of center, with broad wedges sweeping down and right. A’s bottom-right description may be the same item.
+
+A: A detail we haven’t compared: my middle-left has a large triangle hanging down from the upper-left, beside a small diamond on the right. Does that ring a bell?
+
+A: That sounds like my bottom-right too: the small diamond is left of center, with broad wedges sweeping down and right. Since you both placed it bottom-right, could one of you double-check the cell position?
+
+C: I checked my grid: that diamond-and-wedges item is definitely bottom-right. It could be bottom-right in all three grids; the matching position alone doesn’t establish a shared sequence, so let’s compare the neighboring cells too.
+
+A: I noticed a small diamond at the far right of my middle-left item, beside the large triangular wedge. Does that help identify it?
+
+A: I confirm that item is bottom-right in my grid too: a tilted diamond on the left with broad wedges sweeping down and right. Let’s compare the neighboring cells to see whether we have a shared row or column.
+
+C: My bottom-left has a small diamond near the top, above broad triangular shapes that meet across the middle. Does that sound like any item in your grids?
+
+C: My bottom-middle, immediately left of that item, has a prominent square near the upper-right with broad diagonal shapes around it. What does the cell immediately left of your bottom-right look like?
+
+B: My bottom-middle has a prominent square near the upper-right, surrounded by broad diagonal shapes—sounds like your bottom-middle too. And we both have the diamond-and-wedges item at bottom-right.
+
+A: My bottom-left has a small square near the bottom center, beneath several tall triangular points. Does anyone recognize that item elsewhere in their grid?
+
+C: A, that sounds like my middle-right: several triangular points above a square block near the bottom. So your bottom-left may match my middle-right.
+
+A: I also notice a small triangle sticking out from the far-right edge of my center item. Does yours have that too?
+
+C: A, yes—my center item has a small triangular point sticking out from its far-right edge too.
+
+B: Yes—my center item also has a small triangular point sticking out from the far-right edge, so it matches both of yours.
+
+B: One detail I haven’t mentioned: my middle-right item has a small square near the top, with a broad diagonal wedge dropping toward the lower-left. Does that match anything in your grids?
+
+C: That sounds like my bottom-middle: it has a square near the upper-right and a broad diagonal shape running down-left. Is yours the same item?
+
+B: Yes, that description matches my bottom-middle item too—not my middle-right. With the matching diamond-and-wedges item at bottom-right, it looks like C and I share the bottom row.
+
+C: One detail we haven’t compared: my top-right has a small diamond on the right, with a long triangular point reaching toward the upper-right. Does that match an item you’ve seen?
+
+B: Yes, that’s the same item: mine is middle-right, yours bottom-middle. Your bottom-left diamond-above-wedges item may match my middle-left—could you compare those?
+
+B: That sounds like my top-right too: it has a diamond on the right and a triangular point reaching toward the upper-right. Looks like our top-right cells may match.
+
+A: My top-right has a long slanted strip running down from near the top toward the center. Could that be the item you mean?
+
+C: A, my top-right has a long triangular wedge slanting down from the upper-right toward the center, alongside a small diamond on the right. Does yours also have that diamond?
+
+C: My top-middle has a narrow upright strip at the left, with a diagonal section meeting it near the top. Does that match a cell in your grids?
+
+B: A, my top-right also has a long diagonal wedge descending toward the center, with a diamond on the right and a small square below. Could that be the same item?
+
+A: Yes, that sounds like my top-middle: a narrow upright strip on the left, a diagonal running down-right, and a broad triangular base.
+
+C: A, that sounds like my top-middle too. B, your top-right may be the same item—can you compare its narrow left strip and triangular base? We still need to verify the bottom-left match to confirm the shared bottom row.
+
+C: One more detail: my top-left has a tilted diamond just to the right of a narrow slanted bar, with a broad triangle extending down-right. Does that help distinguish it?
+
+A: A new detail: my bottom-left item has a distinct right-pointing wedge in its upper-right corner. Does that feature appear in another cell?
+
+B: One detail from my bottom-right: there’s also a pointed triangle rising above the diamond toward the top edge. Does that help distinguish it?
+
+A: One more detail in my bottom-left: a long upright bar along the left bends into a diagonal near its lower end, beside the broad central triangle.
+
+C: A, my middle-left has a distinct triangular point at the upper-right, next to a small diamond near the center. Could that be the wedge you mean?
+
+C: My middle-right has a small square near the lower center, with a diagonal band extending up and right from it. Does that feature appear in another cell?
+
+A: In my top-right, a long slanted bar runs from the small diamond toward the upper edge. Does that feature match a cell in either of your grids?
+
+A: That sounds like my bottom-left: it has a small square near the lower center, with diagonal pieces rising toward the right.
+
+B: C, my bottom-middle has a square near the upper-right and a diagonal band running down-left. Is your middle-right square lower down, or could it be the same item?
+
+C: B, my middle-right square is lower, near the bottom-center, with the diagonal rising up-right. Your bottom-middle square is upper-right with the diagonal running down-left, so they look like different items.
+
+C: It’s lower down in my middle-right, so I think that’s a different item. My bottom-middle has the square near the upper-right and the diagonal running down-left, matching your bottom-middle.
+
+B: My bottom-right also has a small wedge sticking out from the far-right edge around the middle. Does that feature show up in either of your grids?
+
+A: To check the bottom row: my bottom-left has a small square near the lower center beneath several tall triangular points. Does either of you have that item in your bottom-left?
+
+C: A, that matches my middle-right: several tall triangular points above a small square near the bottom. B, my bottom-right also has a small point sticking out from the right edge around the middle.
+
+B: Yes, my bottom-right has that small point on the right edge too. My bottom-left also matches your diamond-above-wedges description, so C and I appear to share the bottom row.
+
+C: One extra detail in my middle-right: there’s a small triangular cap at the upper-right edge, separate from the square near the bottom. Does that help identify it?
+
+A: One detail to compare: my middle-right has a small diamond centered above two broad opposing triangles. Does that match the diamond-above-wedges item in your bottom-left?
+
+B: One extra detail on my top-middle item: there’s a small diamond at the junction of the diagonal and the lower shapes. Does yours have that too?
+
+B: A and C, does your matching top-middle item also have a small diamond where the diagonal meets the lower shapes? If so, that further confirms our top-middle match.
+
+C: Yes—my top-middle has a small diamond where the diagonal meets the lower shapes, and A’s description also matched that item.
+
+A: My top-left item has a small triangular point sticking out from the far-right edge, just below the central diamond. Does anyone see that feature elsewhere?
+
+C: A, yes—my top-left has a small point sticking out on the far-right edge just below the central diamond too. That supports our top-left match.
+
+C: My bottom-left also has a narrow slanted bar along its lower-right edge, beneath the diamond and broad wedges. Does that help distinguish it?
+
+B: My top-middle has a narrow vertical stem that rises above where the diagonal meets the left strip. Is that detail visible in yours too?
+
+A: Yes—my top-middle has a narrow upright stem rising above the point where the diagonal meets the left strip, so that detail matches.
+
+B: I notice my bottom-left item has a short diagonal wedge along its lower-right edge, beneath the central shapes. C, does your matching middle-left have that detail too?
+
+A: One detail we haven’t compared: my top-right item has a small, flat-based triangular cap near its upper edge, above the diamond-and-wedges. Does that feature appear elsewhere?
+
+C: B, yes—my bottom-left has a short slanted bar along the lower-right edge beneath the diamond and wedges. A, my top-right also has a flat-edged triangular point above the diamond; does yours have the same diamond-and-wedges arrangement?
+
+C: B, my bottom-left has a short slanted bar along the lower-right edge beneath the diamond and wedges. Is that the detail you mean?
+
+B: Yes, my top-right has a flat-based triangular cap along its upper-right edge, above the diamond-and-wedges. That sounds like the same feature you spotted.
+
+A: In my top-left, a small triangular cap sits along the top edge, just to the right of the narrow upright strip. Do you see that detail in your matching item?
+
+A: It looks like we have two shared sequences: the top row (top-left, top-middle, top-right) and the middle column (top-middle, center, bottom-middle).
+
+C: A, I see that triangular cap on my top-left too. Before settling on those sequences, let’s check them against B and my matching bottom row—what are the three item descriptions in your proposed top row?
+
+A: Before we settle on those sequences, can we check one more detail? My bottom-middle has a square near the upper-right, with a broad diagonal section extending down-left.
+
+A: To check my proposed top row: top-left has a central diamond with a bent upright strip on the left and wedges around it; top-middle has a central diamond with an upright strip at the left and broad wedges below; top-right has a diamond left of center, a slanted strip above it, and broad wedges. I’m not certain these match B’s top row—let’s verify each item against B’s grid before calling it a shared sequence.
+
+C: A, yes—that matches my bottom-middle: the square is near the upper-right, with a broad diagonal running down-left. What does the cell immediately to its left look like in your grid?
+
+C: One detail in my top-middle: a short horizontal cap tops the left upright stem, and a long diagonal runs down-right from it. Does that match the item you were comparing?
+
+B: One extra detail in my bottom-left: a narrow wedge rises toward the top edge just to the right of the small diamond. Does that match either of your diamond-and-wedges items?
+
+A: My bottom-left has a small square near the bottom, beneath a broad triangular shape, with a long upright strip along the left edge. Does that match the item just left of your bottom-middle?
+
+A: Those sound different: my bottom-left has a small square low beneath the broad triangle, while C’s bottom-left was described with a diamond above the wedges.
+
+B: I can confirm the middle column: my top-middle, center, and bottom-middle match the items described in those positions by A and C. The top row still needs a clear check of the top-right item.
+
+C: One detail about my center item: besides the small square at lower-left, it has a tall square-edged bar just right of center, surrounded by triangular wedges. Does that stand out in your matching item?
+
+A: One detail I haven’t mentioned: my middle-right has a long slanted bar along its bottom edge, extending toward the right. Does that feature stand out in either of your grids?
+
+A: Yes, my center item has that tall square-edged bar just right of center, with wedges around it and a small square at the lower-left. That confirms the center match.
+
+C: My middle-center item also has a small triangular point sticking out from its right edge, beside the broad wedges. Does that detail match yours?
+
+B: One extra detail in my bottom-middle: a separate slanted band runs in from the far left, below the top edge and well left of the square. Does that match your item too?
+
+A: In my bottom-left, the broad diagonal wedge ends in a flat horizontal edge just above the small square. Does that detail show up in either of yours?
+
+A: Yes, my bottom-middle has that separate slanted band entering from the far left, below the top edge. That confirms the bottom-middle match; we still need to verify the top-right item before settling on the second shared sequence.
+
+C: My top-right has a diamond on the right, a long wedge slanting inward from the upper-right, and broad wedges below. Does that match either of your top-right items? That should help check the proposed top row.
+
+A: My middle-left has a long tapered wedge reaching toward the far-left edge, below the central cluster. Does that detail help distinguish it?
+
+B: My top-right has a small square near the lower center, with a tall triangular peak above it and a slanted diamond-like shape on the right. C, does that match your top-right, or is your diamond positioned differently?
+
+C: My top-right also has a long, low wedge entering from the left edge and pointing toward the center, below the diamond. Does either of your top-right items have that feature?
+
+C: B, my top-right has a diamond on the right and a long wedge entering from the left below it. Does your top-right have that same left-side wedge?
+
+B: My bottom-left has a narrow diagonal strip entering from the upper-left and meeting the diamond area. Is that the same item as your top-right, or does yours have the low wedge from the left instead?
+
+B: I think those are different items: my bottom-left has the diamond on the left with a narrow strip entering from the upper-left. C’s top-right sounds closer to my top-right, with the diamond on the right and a low wedge entering from the left.
+
+A: My top-right also has a small square below the diamond, near the lower-right of the shape. Do either of yours have that square?
+
+B: One detail in my middle-left: there’s a small triangular cap high on the left, above the central diamond. That may help distinguish it from the other diamond-and-wedges items.
+
+B: My top-right does have a square near the lower center, but it sits left of the slanted diamond-like shape on the right. Is yours arranged that way too?
+
+A: Mine is arranged differently: the diamond is left of center, and I don’t see a square near the lower center.
+
+C: My top-right has the diamond on the right and a long wedge entering from the left, but no distinct lower square. That sounds closer to B’s than A’s; B, could the lower shape you noticed be triangular rather than square?
+
+A: My top-right also has a broad wedge reaching down to the bottom edge on the left, beneath the diamond. Does that feature appear in either of your grids?
+
+C: B, my top-right has no square near the lower center; it has a long wedge entering from the left below the diamond, plus a tall triangular section along the upper-right. That seems different from your top-right.
+
+B: C, that sounds different from my top-right: mine has a clear square near the lower center, below the tall peak and left of the diamond-like shape on the right.
+
+A: One detail in my bottom-left: a wedge near the upper-right has a flat bottom edge and a slanted side. Does that feature show up in another cell?
+
+C: My bottom-left has two small triangular points along the top, flanking the central diamond. Does your matching item have both points?
+
+A: My middle-right has a small triangular cap near the top edge, above the central diamond. Does that help distinguish it from the other diamond-and-wedge items?
+
+A: Yes—my middle-right has a small triangular cap directly above the central diamond, with broad wedges below. Does either of you have that same arrangement elsewhere?
+
+B: My top-left also has a small triangular tab along the far-right edge, just below the central diamond. Does that detail show up in either of your matching items?
+
+C: B, yes—my top-left has a small triangular tab on the far-right edge just below the central diamond too. That confirms our top-left items match.
+
+C: B, yes—my top-left has that small tab on the far-right just below the central diamond too. Does yours also have a triangular cap along the top edge?
+
+B: Yes—my top-left has a triangular cap along the top edge near the left side, as well as the small tab on the far-right below the diamond.
+
+A: Yes, my top-left has a small triangular cap along the top edge, just to the right of the narrow upright strip.
+
+A: One detail I haven’t compared: my bottom-left item has a narrow triangular point reaching toward the upper-right edge. Does that appear elsewhere in your grids?
+
+C: One more detail: my top-middle has a small left-pointing triangular wedge midway down its left edge. Does your matching item have that too?
+
+B: Yes—my top-middle has a small left-pointing triangular wedge midway down its left edge, so that detail matches yours.
+
+A: Yes—my top-middle has a left-pointing triangular wedge along its left edge, roughly midway down, so that detail matches.

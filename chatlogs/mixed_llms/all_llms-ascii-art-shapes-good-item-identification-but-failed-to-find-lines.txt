@@ -1,0 +1,230 @@
+# 9/28/26 - All LLMs (mixed:  A: gpt-5-nano B: gpt-5.4-nano C: gpt-6-luna) - simple_text1 ASCII shapes Set3-
+#
+# A starts with a description of all items in higher level description (e.g. bunny face, flower, sunburst etc)
+# others follow this and it appears that team could move on to identify the shared configurations quickly
+# from this point (the two diagonals in this set)
+# but discussion goes on into details of individual items and doesn't keep with task goals
+
+
+
+C: Hi, I’m here!
+
+A: Hi, I’m here!
+
+B: Hi, I’m here!
+
+A: My grid: top row is a bunny face, a diamond-shaped figure, and a starburst. Middle row is a snail, a flower, and a house with a flat bottom. Bottom row is a sunburst, a cat, and a house with a peaked base.
+
+B: My grid has the bunny and starburst in the same top-row corners as yours, but the top middle is a snail. The cat is middle-left and the diamond is middle-right; the flower stays center. Bottom row is the sunburst and two houses.
+
+A: In my grid, the top-right to bottom-left diagonal is starburst–flower–sunburst. Is the sunburst bottom-left in yours too?
+
+A: I also have the snail at middle-left and the cat at bottom-middle. Where are the two different house symbols in your grid, C?
+
+C: Mine has the bunny and starburst at the top corners, with the cat between them; flower is center, and sunburst is bottom-left. The middle row is house–flower–snail, and the bottom row is sunburst–diamond–house.
+
+C: Looks like the two shared sequences are the diagonals: bunny–flower–house and starburst–flower–sunburst.
+
+B: Yes, my sunburst is bottom-left too, so the starburst–flower–sunburst diagonal matches. My two houses are both in the bottom row, at middle and right.
+
+A: C’s bottom row is sunburst–diamond–house, while mine is sunburst–cat–house. B, where are your diamond and houses?
+
+A: The flower is at the center in all three grids so far. B, is your bottom-right house also on the bunny–flower–house diagonal?
+
+B: My diamond is middle-right; the two houses are bottom-middle and bottom-right. That matches what I said earlier.
+
+B: Yes—the bottom-right house completes the bunny–flower–house diagonal. So the two shared sequences are bunny–flower–house and starburst–flower–sunburst.
+
+C: One visual detail: the two houses differ at the base—the middle-left house has a flat bottom, while the bottom-right house has a slanted, inset base.
+
+A: One more detail in my grid: the center flower has a single vertical stem beneath two rows of three petals.
+
+B: The sunburst at bottom-left has rays above and below its two horizontal eyes, with a short vertical line extending beneath it.
+
+A: My bottom-middle cat has pointed ears, round eyes, and a little U-shaped mouth.
+
+B: The top-middle snail-like figure has a small loop in its center and wavy lines above and below. Does that match yours?
+
+A: Yes, mine has the same small loop with wavy lines above and below.
+
+A: Yes, the top-left bunny has two pointed ears above a round face, with a small nose and whiskers.
+
+C: My bottom-middle diamond has two small star-like marks inside it.
+
+B: My middle-right diamond has two asterisk marks, one on each side inside the outline. Is that the same detail as C’s diamond?
+
+C: The top-right starburst is made of seven asterisks, with one at the top, pairs on the next and bottom rows, and two spread across the middle.
+
+A: My two houses have different bases: the middle-right one has a flat bottom, while the bottom-right one has an inset, slanted base. Do yours look the same?
+
+B: Yes, mine match: the flat-bottom house is bottom-middle, and the inset, slanted-base house is bottom-right.
+
+C: One more detail: the cat’s face has a squared-off, angular outline beneath its pointed ears.
+
+B: The flower in my center square has one asterisk above two rows of three, with a single vertical stem below.
+
+A: The top-right starburst has no enclosing outline; it’s just seven asterisks arranged in a burst.
+
+B: The two houses both have a peaked roof and straight vertical sides; only their bottom edges differ.
+
+A: The diamond has a pointed top and bottom, with two asterisks side by side inside.
+
+C: The sunburst has two short horizontal marks for eyes, and no mouth is drawn.
+
+A: The sunburst also has diagonal rays extending out to both sides above and below its eyes.
+
+C: The flat-bottom house has no door or windows—just the peaked roof, straight sides, and flat base.
+
+A: The bunny has a second pair of little caret-like marks beneath its face, mirroring the pointed ears above.
+
+B: The snail’s bottom edge is three short wavy marks. Does yours have those too?
+
+A: The cat’s eyes are separated by a small gap, and its face has a short underscore-like mark above the U-shaped mouth.
+
+A: Yes, mine has three short wavy marks along the bottom too.
+
+B: The bunny’s face is framed by parentheses around the eyes, with a pair of caret marks below it as well as the two ears above.
+
+C: Does your cat also have vertical bars framing its eyes, between the ears and the squared-off lower face?
+
+A: The diamond has sharp points at the top and bottom, with slanted sides joining them. Does yours have the same outline?
+
+A: Yes—the cat has vertical bars on either side of its eyes, between the ears and the squared-off lower face.
+
+B: Yes, mine has the same pointed diamond outline, with two asterisks inside.
+
+A: Does your snail also have a tilde to the right of the upper “o” and one just left of its central loop?
+
+B: Yes—there’s a tilde to the right of the upper “o” and another just left of the central loop.
+
+C: I notice the bunny’s eyes are two little caret shapes inside the parentheses—does yours look the same?
+
+A: The flat-bottom house’s base is drawn as a vertical bar at each side joined by two underscores: |__|.
+
+B: The flower’s top asterisk sits above two compact rows of three asterisks. Is there a gap between the top asterisk and the petals in your image too?
+
+C: My cat has no whiskers drawn—does yours?
+
+A: My cat’s bottom edge has a centered U between two slanting strokes: \ U /. Do yours have that same detail?
+
+A: No whiskers on mine either.
+
+A: In my bunny, yes—the eyes are two small carets inside the parentheses. Does yours have the same?
+
+C: There’s no blank row between the flower’s top asterisk and its two rows of petals.
+
+C: Yes, mine has two small caret-shaped eyes inside the parentheses.
+
+C: The snail’s third line repeats the little “o~” shape from the top line. Is that how yours looks too?
+
+A: The cat’s lower face has an underscore between two short diagonal marks (`|_-_|`). Is that how yours looks too?
+
+A: Yes, mine has the same underscore between the two short diagonal marks.
+
+B: Yes, mine has “o~” on both the first and third lines.
+
+A: C, does your cat also have a centered U-shaped mark between the two slanted strokes at the bottom of its face?
+
+B: The starburst has an open center—the asterisks form a ring-like burst rather than filling the middle.
+
+C: The cat’s pointed ears are joined by a short horizontal line across the top (`/\_/\`).
+
+C: The peaked-roof house has an inset base (`\__/`) and no door or windows—is that what you see too?
+
+B: Yes, mine has the same short line connecting the cat’s pointed ears across the top.
+
+B: Yes—the bottom-right house has the inset `\__/` base and no door or windows.
+
+C: The cat’s eyes are lowercase “o” shapes, set between the two vertical side bars.
+
+A: The flower’s stem is a single vertical bar centered directly beneath the petals.
+
+B: One small detail: the snail’s bottom row is exactly three tildes (`~~~`).
+
+C: Looking closely at the bunny, I don’t see a separate nose or whiskers—just the caret marks inside the parentheses. Does that match your view?
+
+B: The flower’s top asterisk, petal cluster, and stem all line up on the same center axis.
+
+B: Does your sunburst also have a short vertical stroke centered between the diagonal rays on both rows around its eyes?
+
+A: One detail about the sunburst: its center vertical stroke appears in both rows of diagonal rays and continues below the face.
+
+A: Yes, mine has a short vertical stroke centered between the diagonal rays on both rows around the eyes.
+
+C: The sunburst has a vertical ray centered in each of its two rows of diagonal rays, with a separate short vertical mark extending below.
+
+A: I don’t see a separate mouth on the bunny either—just the two caret marks inside the parentheses.
+
+B: The starburst has an open center and no stem, unlike the flower. Does that stand out in your grids too?
+
+A: The inset-base house ends with a centered double underscore between the slanted sides (`\__/`). Does yours look the same?
+
+B: The snail’s second line is `~()`—a tilde just before the small parenthesis-shaped loop. Is that how yours looks?
+
+A: Does the flat-bottom house have an open interior too, with no door or windows?
+
+B: Yes, the flat-bottom house has an open interior with no door or windows.
+
+A: The cat’s eyes are lowercase `o`s, each centered between the vertical side bars. Is that how yours appears too?
+
+B: Yes—my cat’s lowercase `o` eyes are each centered between the vertical side bars.
+
+B: Yes, mine has lowercase `o` eyes, each between the vertical side bars. The cat’s bottom edge also has a centered `U` between two slashes.
+
+C: Yes—each lowercase `o` sits between the cat’s vertical side bars.
+
+A: Neither house has a chimney—the peaked roof is just a simple ` /\ ` above the straight sides.
+
+A: The two houses share the same peaked roof and straight side walls; their base shapes are the only difference.
+
+A: The bunny’s upper and lower pairs of caret marks line up symmetrically around its face.
+
+A: The diamond’s two asterisks sit side by side on the same horizontal line. Is that how yours looks too?
+
+B: Yes, mine has two asterisks side by side on the same horizontal line.
+
+C: The sunburst’s eyes are two widely spaced horizontal dashes, with no center stroke on that row—does yours look the same?
+
+A: One small bunny detail: beneath its face, the lower pair of marks are backslashes (`\ /`), not carets.
+
+B: Yes, the sunburst’s two horizontal dashes are widely spaced, with no center stroke on the eye row; the vertical strokes appear in the ray rows above and below.
+
+C: I see both beneath the bunny’s face: first the backslashes (`\ /`), then a final pair of carets (`^^`).
+
+A: Right—the bunny has a final `^^` row below the backslashes, matching the `^^` row above its face.
+
+C: My diamond has no flat edges—just four slanted sides meeting at sharp top and bottom points. Is yours the same?
+
+B: Yes, mine has four slanted sides meeting at sharp top and bottom points, with no flat edges.
+
+B: Yes, mine has four slanted sides meeting at sharp top and bottom points. The starburst also has seven asterisks arranged around an open center.
+
+A: Yes, mine has four slanted sides meeting at sharp top and bottom points, with the two asterisks side by side across the middle.
+
+B: The houses’ roofs are drawn in two lines: a small ` /\ ` peak above the wider ` / \ ` roof. Do you see that in yours too?
+
+C: Yes, both houses have the small ` /\ ` peak above the wider ` / \ ` roof.
+
+A: I notice the sunburst’s final vertical stroke sits centered directly beneath its lower ray row.
+
+C: The flower’s single stem ends without a pot or base—does yours look that way too?
+
+B: The diamond’s two asterisks sit across its widest middle row, leaving the pointed top and bottom empty. Is that how yours looks?
+
+A: Yes, the flower’s stem ends plainly with no pot or base.
+
+B: Does the starburst’s top asterisk sit centered above the pair of asterisks beneath it?
+
+C: The snail’s loop is made of parentheses in its second row (`~()`), with the tilde immediately to the left. Is yours the same?
+
+C: Yes, the top asterisk is centered above the pair beneath it.
+
+A: One small detail: the flat-bottom house’s straight side walls run down from the wider roof to its `|__|` base.
+
+A: The snail’s first and third rows both read `o~`, framing the `~()` loop in the second row—does yours too?
+
+C: Yes, mine has `o~` on the first and third rows, framing `~()` in the second.
+
+C: The peaked house’s `\__/` base is inset narrower than its walls, unlike the flat house’s `|__|` base. Do you see that difference too?
+
+A: Yes, the inset `\__/` base is narrower than the walls, unlike the flat `|__|` base. The flower’s two petal rows each have three asterisks.
