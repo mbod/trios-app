@@ -136,8 +136,6 @@ class Client:
         self.id = id
 
 
-        # which LLM model to use
-        MODEL_NAME = MODEL_DICT[id]
         
         self.room = room
         self.ws_url = ws_url
@@ -498,6 +496,12 @@ class Client:
     
 
 def run_agent(agent_id, room_id):
+
+    # which LLM model to use
+    MODEL_NAME = MODEL_DICT[agent_id]
+
+
+    
     client = Client(
         agent_id,
         room_id,

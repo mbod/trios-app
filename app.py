@@ -8,7 +8,7 @@
 
 
 from flask import Flask, request, render_template, session, url_for, jsonify
-from flask_socketio import SocketIO, join_room, leave_room, send
+from flask_socketio import SocketIO, join_room, leave_room, send, emit
 import logging
 from  multiprocessing import Queue, Process
 from uuid import uuid4
@@ -17,7 +17,8 @@ from collections import defaultdict
 import requests
 
 
-from client_ws import run_agent
+# NEEDED?
+#from client_ws import run_agent
 
 
 PARTICIPANTS=['A','B','C']
@@ -200,10 +201,10 @@ def handle_disconnect():
 @socketio.on('message')
 def handle_message(payload):
 
-    print('MESSAGE - ', payload, request.sid)
+    logger.info('MESSAGE - ', payload, request.sid)
 
     client = connected_clients.get(request.sid)
-    print(client)
+    logger.info(f'CLIENT ID: {client}')
     #if not client:
     #    return
     
@@ -214,8 +215,9 @@ def handle_message(payload):
     message = payload['message']    
 
     logger.info(f'Sending {payload} to {room}')
-    send(payload, to=room)
+    emit(payload, to=room)
 
+    
 @socketio.on('task_begin')
 def handle_begin_task(payload):
     '''Signal that task has begin and participants can begin'''
@@ -224,8 +226,16 @@ def handle_begin_task(payload):
 @socketio.on('task_complete')
 def handle_end_task(payload):
     '''Handle participant signal that they think task is complete'''
-    pass
 
+    logger.info(f'TASK COMPLETE: {payload} - request_id: {request.sid}')
+
+    client = connected_clients.get(request.sid)
+    room = client['room']
+    
+    sender = payload['from']
+    logging.info(f'Client {sender} has sent a TASK COMPLETE signal')
+
+    emit(payload, to=room)
     
     
 if __name__ == "__main__":

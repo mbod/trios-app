@@ -8,7 +8,7 @@
     Completion Message: 
     {% for part in participants %}
     <label>{{part}}</label>
-    <input type="radio" name="complete-{{part}}" disabled/>
+    <input type="radio" id="complete-{{part}}" disabled/>
     {% endfor %}
   </div>
   
@@ -58,7 +58,7 @@
 </div>
 
     <script type="text/javascript">
-    const socketio = io();
+      const socketio = io();
 
       {% if participants|length==1 %}
       const from = '{{participants[0]}}';
@@ -79,10 +79,30 @@
 
 
     console.log(socketio);
+
+
+    /* TASK COMPLETE message */
+    socketio.on("task_complete", function(message) {
+	console.log('WS: task_complete ' + message.from + ' ' + message.message) ;
+	 taskComplete(message.from);
+    });
+
+
       
-    socketio.on("message", function (message) { console.log('WS: ' + message); createChatItem(message.message, message.from) });
+      socketio.on("message", function (message) {
+
+	  console.log('WS: "message" ' + message.from + ' ' + message.message);
+	  createChatItem(message.message, message.from)
+      });
 
 
+
+    function taskComplete(senderID) {
+	console.log('taskComplete: participant '+ senderID);
+	const complete_status = document.getElementById('complete-'+senderID);
+	complete_status.checked = true;
+    }
+      
         
     function createChatItem(message, sender) {
 
