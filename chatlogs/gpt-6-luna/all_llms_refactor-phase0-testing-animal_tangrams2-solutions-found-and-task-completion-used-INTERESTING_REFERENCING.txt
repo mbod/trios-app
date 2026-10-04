@@ -1,0 +1,139 @@
+# 10/4/29 - All LLMs (gpt-6-luna) - animal_tangrams2 set1-mono
+#
+# testing refactoring of app and setup (Phase 0)
+# A introduces a new referencing scheme around TURN 8 that combines item number (1-9 - by rows) with participant name
+# "A3, B1 and C1" - this is a new format not qualitatively observed before in other trials
+# The others pick up and it slowly becomes the dominant referencing scheme
+# two turns later B makes explicit that the A B C prefix is understood as who's grid
+# B: "My top-middle (B2) seems to match C2:"
+# then used predominately by all three in trying to find the shared sequences
+# but does seem to be used a little inconsistently
+# find two candidate lines and towards the end
+# A sends the task_complete and stops without a concluding message
+# so B and C continue for a bit and work for clarification but then both send task_complete
+
+
+
+C: Hi! I'm here ready to work on the task
+
+B: Hi! I'm here ready to work on the task
+
+A: Hi! I'm here ready to work on the task
+
+A: My top-right item is a roughly symmetrical geometric figure: a small diamond at the center, with larger opposing triangles above and below it and smaller shapes to the sides. Does that match anything in your grids?
+
+B: My top-left item has a clear central diamond, but its surrounding shapes look less symmetrical. Could that be the same item?
+
+A: Has anyone found a matching item for my top-right figure—the central diamond with larger triangles above and below it?
+
+C: My top-left item also has a clear central diamond with several triangles around it, though the larger triangles seem offset rather than directly above and below. Could that be your figure?
+
+A: It could be the same item. Mine has a central diamond, a long pointed shape extending to each side, and several triangular shapes above and below. What are the surrounding shapes on yours?
+
+C: Around my central diamond, there are broad triangles above and to the lower right, plus a tall pointed section extending down-left. It sounds like the same figure, perhaps rotated or reflected.
+
+B: That does sound like the same item: my top-left has a central diamond, a broad triangle above it, another extending down-right, and a long pointed section down-left.
+
+A: Great, that confirms one shared item: A3, B1, and C1. We still need two more items to establish the shared sequences—could you describe your top-middle items?
+
+C: My top-middle has a small central diamond, a broad triangle directly below it, and angular pointed shapes extending to the upper-right and left.
+
+B: My top-middle (B2) seems to match C2: it has the central diamond, broad triangle below, and angular points around it. A, does it resemble your top-middle?
+
+A: Yes, A2 matches that description: it has a central diamond, a broad triangle below, and angular pointed shapes extending to the sides. So A2, B2, and C2 appear to be the same item.
+
+B: A, does your top-middle match our B2 and C2? If not, could you describe it so we can check another item?
+
+A: Yes, my A2 matches your descriptions of B2 and C2: it has the central diamond, broad triangle below, and pointed shapes around it. We should now compare the positions of matching items to identify the shared sequences.
+
+C: In my grid, C1 and C2 are adjacent in the top row. C3 has a central diamond, a large pointed triangle toward the upper right, and angular shapes extending left and downward. Does that match a third item in your top rows?
+
+A: We’ve matched A2 with B2/C2 and A3 with B1/C1, but their left-to-right order is reversed in B compared with A. So those matches alone don’t make a shared ordered sequence. Let’s verify the identities and compare another item to find a full line of three.
+
+C: C3 has a diamond on the right, with angular pointed sections extending left and downward and a large triangle above-right. Does that match an item in either of your grids?
+
+A: We’ve matched A3–B1–C1 and A2–B2–C2, but those pairs run in opposite orders across the top rows. C, does C3 match A1 or another item in my grid? That could help us check the third item in those rows.
+
+C: C3 is the diamond-on-the-right item, with a broad triangular section above-left and pointed shapes extending left and below. A, does that match A1?
+
+A: A1 has a central diamond, a broad triangle extending down-right, and a long pointed section down-left. That could be C3 rotated, but I’m not certain—does B see a match?
+
+C: Another candidate: C4 (middle-left) has a central diamond, a long diagonal shape rising above it, a broad triangular section to its right, and a pointed piece below-left. Does either of you recognize it?
+
+B: C4 might match my B4: it has a central diamond with pointed shapes above and broad triangles extending below. Does that fit your layout?
+
+C: C4 does have a central diamond, a long pointed shape above it, and broad angular shapes to the right and below-left. That sounds consistent with B4; A, do you recognize that item?
+
+C: We still need a third match to verify a shared line. Can either of you identify my C7 (bottom-left): a small central diamond above two broad, opposing triangular sections?
+
+B: C7 may match my B9: it has a small central diamond with two broad opposing triangular sections around it. Does the arrangement fit if rotated?
+
+C: One item we haven’t compared yet is C8 (bottom-middle): it has a small central square/diamond, with large pointed wedges extending upper-left, upper-right, and down-left. Does either of you recognize its match?
+
+A: C8 sounds like my A8: it has a small central square and broad pointed wedges around it, including one extending down-left. Can you confirm whether the wedge arrangement matches?
+
+C: C8 has a central square and broad wedges extending upper-left, upper-right, and down-left, so A8 sounds like a good match. B, does your B8 have the same arrangement?
+
+B: Yes, B8 matches C8: both have a central square/diamond with broad wedges extending upper-left, upper-right, and down-left. That also sounds like A8.
+
+A: A8 has a small square right of center with wedges around it, so my match to C8 is uncertain. B, can you identify A8’s match in your grid? Then we can check whether those positions help establish a shared sequence.
+
+B: B8 is the closest match: its small square is right of center, with broad wedges extending upper-left, upper-right, and down-left. It sounds like A8 and C8, though A can confirm the exact arrangement.
+
+C: C8’s square is right of center, with wedges upper-left, upper-right, and lower-left, so A8/B8 seems plausible. Since C2 and C8 are both in column 2, let’s check the missing middle item: C5 has a small tilted square, broad triangular sections above-left and below, and a pointed section on the right. Does that match A5 and B5?
+
+A: My A8 has a central square and broad wedges extending upper-right, left, and lower-left, so B8/C8 is a plausible match, though I’m not fully certain of the orientation. We should verify that before treating it as a confirmed sequence.
+
+A: A5 has a tilted central diamond-like shape, broad triangles above and to the left, and pointed shapes extending to the right and below. That sounds like a possible match for C5, though the arrangement may differ. B, does it match B5?
+
+B: B5 looks like a match for C5 and A5: it has a tilted central diamond with broad angular sections around it. If confirmed, A2–A5–A8, B2–B5–B8, and C2–C5–C8 give us a shared middle column.
+
+C: C5 has a distinctive central tilted square, broad triangular sections to its upper-left and left, and pointed shapes on the right and below. B, does that match B5? If so, C2–C5–C8 would support a shared second column.
+
+B: Yes, B5 matches that description. So A2–A5–A8, B2–B5–B8, and C2–C5–C8 confirm the shared middle column. We still need one more shared sequence.
+
+B: We have a shared middle column: A2/A5/A8 = B2/B5/B8 = C2/C5/C8. C4 and B4 may also match—A, can you check whether A4 is the same item? That could help us find another shared line.
+
+B: A, can you confirm whether A4 matches B4/C4? If so, we can compare the rightmost items to see whether the middle row is our second shared sequence.
+
+C: C4 is the middle-left item, and C5 is the confirmed middle-column match. To check whether the middle row is our second sequence, could A confirm A4 matches C4, and do A6/B6 match C6? C6 has a square near the bottom with broad angular sections above and to the sides.
+
+B: We’ve confirmed the middle column, but still need a second shared line. C7 was tentatively matched to my B9; A, can you identify its match in your grid so we can compare the positions?
+
+C: The top row may be our second shared sequence: C1–C2 correspond to A3–A2 and B1–B2. B, does C3 match B3? A, does it match A1? If so, the row is confirmed.
+
+A: A1 could match C3: it has a central diamond, a broad triangle extending down-right, and pointed sections to the left and below. But if C1–C2–C3 maps to A3–A2–A1, that order is reversed, so it wouldn’t confirm a shared ordered row.
+
+C: Since the top-row order is reversed in A, let’s check the middle row instead. A, does A4 match C4, and do A6/B6 match C6? That would confirm whether C4–C5–C6 is our second shared sequence.
+
+A: A4 has a diamond near the right edge, with broad angular pieces extending above-left and down-left. Does that match B4/C4? If so, we can compare the middle row.
+
+B: B4’s central diamond looks left of center, not near the right edge as A4 describes, so I’m not confident they match. Let’s compare B6 with C6 next.
+
+C: C6 has a square near the bottom, a large triangle above-left, and angular sections extending to the right. B, does that match B6? A, does it match A6?
+
+B: B6 has a small diamond near the far right, with angular sections extending left and down; it doesn’t seem to match C6’s square near the bottom. A, does A6 match C6?
+
+A: A6 has a small central diamond above broad triangles, with an angular wedge at the lower right. It could match C6 if rotated 180°, but I’m not certain; B6 sounds less like it.
+
+A: A6 has a small square near the bottom, with broad angular sections above it and a long extension to the left. C6 could be the same item rotated, but we should compare the outline before counting it as a match.
+
+C: A6’s latest description sounds closer to C6: both have a small square low in the figure and broad sections above it. B says B6 looks different, so B, could your match to C6 be elsewhere in your grid?
+
+B: The only additional plausible match I’ve got is C7 ↔ B9 (bottom-right in my grid): a small diamond above two broad opposing sections. A, can you identify its match in your grid so we can check whether it completes another line?
+
+A: We’ve confirmed the middle column. A7 has a small central square/diamond with broad angular sections around it. Could B compare it with B9 and C compare it with C7? If those match, we can check whether their positions form another shared sequence.
+
+A: A7 is a possible match: it has a small square low in the figure with broad angular sections above and to either side. Does that fit C7/B9?
+
+B: B9 has a small diamond left of center, a wedge extending upper-left, and broad sections sweeping down and right. That’s not an obvious match for C7’s two opposing triangles; A7’s description is too general to confirm.
+
+C: Could C9 be the missing match for A7 and B9? It has a small central diamond, a broad wedge toward the upper-left, and large sections sweeping down and right. That would make C1–C5–C9 a candidate diagonal.
+
+B: C9 sounds like B9: it has a central diamond, a broad upper wedge, and angular sections sweeping down and right. If A7 matches too, that gives the second shared diagonal: A3–A5–A7, B1–B5–B9, and C1–C5–C9.
+
+C: C9 has a small diamond left of center, a wedge at the upper-left, and broad sections sweeping down and right—quite close to B9’s description. If A7 is the same item, then C1–C5–C9 matches A3–A5–A7 and B1–B5–B9 in order. A, can you confirm A7 matches C9?
+
+C: We have the middle column confirmed. The second diagonal is still tentative—A, can you confirm whether A7 matches C9? If so, we can call the task complete.
+
+B: B9 does look like C9. A, can you confirm whether A7 is the same item as C9? If so, that confirms the second shared diagonal.
