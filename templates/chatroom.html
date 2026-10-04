@@ -16,9 +16,17 @@
 
 <div id="room-container">
 
+  <div id="chat-column">
   <div id="messages">
 
   </div>
+
+  <div id="typing-indicator" aria-live="polite">
+XYZ
+  </div>
+
+  </div>
+  
   <div id="stimuli">
     {% for part in participants %}
     <div class="from{{part}} stimImage">
@@ -46,7 +54,7 @@
       
       <button type="submit" id="send-btn" onclick="sendMessage()">Send</button>
     </div>
-  {% endif %}
+    {% endif %}
 
 	
   </div>
@@ -58,12 +66,47 @@
 </div>
 
     <script type="text/javascript">
-      const socketio = io();
+      const socketio = io({ auth: { room: '{{room}}' }});
 
       {% if participants|length==1 %}
       const from = '{{participants[0]}}';
       const textarea = document.getElementById('message-input');
 
+
+      const TYPING_IDLE_MS = 3000;
+      let typingTimer = null;
+      let isTyping = false;
+
+      function startTyping() {
+	  if (!isTyping) {
+	      isTyping = true;
+	      socketio.emit('typing', {
+		  from: from, state: 'start'
+	      });
+	  }
+	  clearTimeout(typingTimer);
+	  typingTimer = setTimeout(stopTyping, TYPING_IDLE_MS);
+      }
+
+      function stopTyping() {
+	  clearTimeout(typingTimer);
+	  if (isTyping) {
+	      isTyping = false;
+	      socketio.emit('typing', {
+		  from: from, state: 'stop'
+	      });
+	  }
+      }
+
+      textarea.addEventListener('input', () => {
+
+	  if (textarea.value.trim() === '') stopTyping();
+	  else startTyping();
+
+      });
+	  
+      textarea.addEventListener('blur', stopTyping);
+      
 
       textarea.addEventListener('keydown', function(event) {
               if (event.key === 'Enter') {
@@ -81,6 +124,43 @@
     console.log(socketio);
 
 
+      /* TYPING indicator */
+      const typers = new Set();
+
+      function renderTypers() {
+	  const el = document.getElementById('typing-indicator');
+	  if (!el) return;
+
+	  const names = [...typers].sort();
+	  if (names.length === 0) {
+	      el.textContent = '';
+	  } else if (names.length === 1) {
+	      el.textContent = `${names[0]} is typing...`;
+	  } else {
+	      el.textContent = `${names.slice(0, -1).join(', ')} and ${names.at(-1)} are typing...`;
+	  }
+      }
+
+
+      socketio.on('typing', (data) => {
+	  if (data.state === 'start') {
+	      typers.add(data.from);
+	  } else {
+	      typers.delete(data.from);
+	  }
+	  renderTypers();
+      });
+
+
+      socketio.on('disconnect', () => {
+	  typers.clear();
+	  renderTypers();
+      });
+      
+
+      /* END TYPING indicator */
+      
+
     /* TASK COMPLETE message */
     socketio.on("task_complete", function(message) {
 	console.log('WS: task_complete ' + message.from + ' ' + message.message) ;
@@ -90,7 +170,8 @@
 
       
       socketio.on("message", function (message) {
-
+	  typers.delete(message.from);
+	  renderTypers();
 	  console.log('WS: "message" ' + message.from + ' ' + message.message);
 	  createChatItem(message.message, message.from)
       });
@@ -126,7 +207,13 @@
 
 
 	   
-    function sendMessage() {
+   function sendMessage() {
+
+       {% if participants|length==1 %}
+       stopTyping();
+       {% endif %}
+       
+	  
       var msgInput = document.getElementById("message-input");
       var msg = msgInput.value;
       if (msg === "") return;

@@ -1,10 +1,12 @@
+
+
 import asyncio
 import random
 import time
 import json
 import socketio
 import logging
-
+from pathlib import Path
 
 # TODO: Using openai API Async
 #       Update to use langchain to allow multiple
@@ -12,62 +14,38 @@ import logging
 #       Can use asyncio and `.ainvoke` function
 #       See 
 from openai import AsyncOpenAI
-
-
 from dotenv import load_dotenv
 
 _ = load_dotenv()
 
+
+LOG = logging.getLogger(__name__)
+
 # Testing with a range of openai models initially
 # TODO: generalize async handler to work with any LLM
 
-#MODEL_NAME = "gpt-4o-2024-11-20"
-#MODEL_NAME = "gpt-5-nano"
-#MODEL_NAME = "gpt-4o-mini"
-#MODEL_NAME = "gpt-4.1-nano"
-#MODEL_NAME = "gpt-5.6-luna"
-MODEL_NAME = "gpt-5.4-nano"
-MODEL_NAME = "gpt-6-luna"
-
-MODEL_DICT = {
-    'A': 'gpt-5-nano',
-    'B': 'gpt-5.4-nano',
-    'C': 'gpt-6-luna'
-    }
+# OpenAI model ids for testing
+#
+# gpt-4o-2024-11-20
+# gpt-5-nano
+# gpt-4o-mini
+# gpt-4.1-nano
+# gpt-5.6-luna
+# gpt-5.4-nano
 
 
-MODEL_DICT = {
-    'A': 'gpt-3.5-turbo',
-    'B': 'gpt-3.5-turbo',
-    'C': 'gpt-3.5-turbo'
-
-}
-
+DEFAULT_MODEL = "gpt-6-luna"
 MODEL_DICT = {
     'A': 'gpt-6-luna',
     'B': 'gpt-6-luna',
     'C': 'gpt-6-luna'
 }
 
-
-
-
-
-ROOM = "test"
-SK = "coll@bplan!"
-
-# number of differences between the three images
-# this could vary for different rounds
-DIFFERENCE_CNT = 6
-
-LOG = logging.getLogger(__name__)
-
-
-#    Your task is to identify the differences
-#    between your versions. There are {difference_cnt} differences between the three images.
-#    The task for the group is to identify and agree upon those {difference_cnt} differences.
-#    Once your team has identified all the differences finish the task.
-
+MODEL_DICT = {
+    'A': 'gpt-5-nano',
+    'B': 'gpt-3.5-turbo',
+    'C': 'gpt-6-luna'
+}
 
 
 
@@ -128,28 +106,54 @@ class Client:
     {image}
     """
 
+    SILENCE_NOTE = """
+        The group has gone quiet. If you have something useful to add, continue 
+        the task naturally: check whether the task has been completed, ask about 
+        or describe an item not yet discussed, or summarize what the group has 
+        established so far.
+    """
+
+    TURN_PROMPT = """
+    Decide what to say next in the group discussion.
+
+    You may:
+    - describe a feature/item in your image
+    - ask another participant about a feature/item
+    - suggest a possible difference or similarity
+    - summarize what the group has established
+    - wait silently if you have nothing useful to add
+    - send a task_complete message indicating that you think group has completed the task
+
+    Keep the message concise and natural.
+
+    Output valid JSON only:
+    {
+      "current_action": "say | ask | suggest_difference | summarize | wait | task_complete",
+      "message": "the chat message to send, or empty string if waiting or task_complete"
+    }
+    """
+
+    INITIAL_GREETING = "Hi! I'm here ready to work on the task"
+    
+
     def __init__(self, id: str,
                  room: str,
                  image_file: str,
                  ws_url: str,
                  socketio_path: str):
-        self.id = id
-
 
         
+        self.id = id
         self.room = room
         self.ws_url = ws_url
         self.socketio_path = socketio_path
 
-
+        self.model = MODEL_DICT.get(id, DEFAULT_MODEL)
         # load the specific image file for instance participant
-        self.image = open(f"static/images/{image_file}").read()
+        self.image = Path(image_file).read_text()
 
-        print(f'AGENT {self.id} - IMAGE {self.image}')
-        
         self.prompt = self.SYSTEM_PROMPT.format(
             part_id=self.id,
-            difference_cnt=DIFFERENCE_CNT,
             image=self.image
         )
 
@@ -160,48 +164,80 @@ class Client:
         # flag to indicate whether agent has
         # sent completion message and should stop working
         self.task_completed = False
-        
-        # keep track of async call awaiting response
-        # that may need to be canceled if new information arrives
-        self.pending_response_task = None
+        self.others_typing = set()
 
-        # time to track time since participant last spoke
-        self.last_spoke_at = 0
 
-        # each participant has a static but random
-        # cooldown period after speaking
-        self.cooldown_seconds = random.uniform(6, 14)
-
-        # timestamp of last message sent by participant
+        # Turn taking state
+        self.last_spoke_at = 0.0
         self.last_heard_at = time.monotonic()
-        self.silence_task = None
-        self.found_differences = []
+        self.cooldown_seconds = random.uniform(6,14)
+        self.speak_lock = asyncio.Lock()
 
-        # Track background tasks for handling
-        # silence and pending response
+
+        # Background tasks
         self.silence_task = None
         self.pending_response_task = None
 
-        
+        LOG.info(f"Agent {self.id} using model {self.model}, image {Path(image_file).name}")
         self.register_handlers()
+
+
+
+    # --- helper functions
+
+    async def _ask_json(self, instruction: str) -> dict | None:
+        """
+        Send chat history and instruction to the LLM;
+        return parsed JSON or None
+        """
+
+        messages = [
+            {"role": "system", "content": self.prompt},
+            *self.history,
+            {"role": "user", "content": instruction}
+        ]
+
+        try:
+            response = await self.LLM.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                response_format={"type": "json_object"}
+                )
+
+            return json.loads(response.choices[0].message.content)
+        except:
+            LOG.exception(f"{self.id}: LLM call failed -- {messages}")
+            return None
+
+
+    def _typing_note(self) -> str:
+        typing = sorted(self.others_typing)
+        if typing:
+            return f"Currently typing: {', '.join(typing)}."
+        return "Nobody else is typing."
+
+    # ----------
+
+        
 
     def register_handlers(self):
         @self.sio.event
         async def connect():
-            LOG.info(f"Client {self.id} connected")
+            LOG.info(f"Agent {self.id} connected")
 
-            self.silence_task = asyncio.create_task(self.silence_monitor())
+            if self.silence_task is None or self.silence_task.done():
+                self.silence_task = asyncio.create_task(self.silence_monitor())
             
-            await self.sio.emit("join", {
-                "id": self.id,
-                "room": self.room,
-                "kind": "agent"
-            })
+            # TODO - should there be a join indicator other than the canned 'hi' message currently?
+            # await self.sio.emit("join", {
+            #    "id": self.id,
+            #    "room": self.room,
+            #    "kind": "agent"
+            #})
 
         @self.sio.event
         async def disconnect():
-            LOG.info(f"Client {self.id} disconnected")
-            self._cancel_all_subtasks()
+            LOG.info(f"Agent {self.id} disconnected")
             
         @self.sio.on("message")
         async def on_message(payload):
@@ -212,14 +248,15 @@ class Client:
                 return
 
             self.last_heard_at = time.monotonic()
+            self.others_typing.discard(sender)
+
+            if sender == self.id:
+                return               # don't add echo to history
             
             self.history.append({
                 "role": "user",
                 "content": f"{sender}: {text}"
             })
-
-            if sender == self.id:
-                return
 
             LOG.info(f"{self.id} heard {sender}: {text}")
 
@@ -231,115 +268,123 @@ class Client:
                 self.maybe_respond_later(sender, text)
             )
 
-    async def silence_monitor(self):
-        while True:
-            await asyncio.sleep(random.uniform(4, 8))
-    
-            silence_for = time.monotonic() - self.last_heard_at
-            since_spoke = time.monotonic() - self.last_spoke_at
-    
-            if silence_for < 6:
-                continue
-    
-            if since_spoke < self.cooldown_seconds:
-                continue
-    
-            # Avoid everyone breaking silence at once.
-            probability = 0.25
-            if self.id == "A":
-                probability = 0.45
-    
-            if random.random() < probability:
-                await self.break_silence()
+        @self.sio.on("typing")
+        async def on_typing(payload):
+            sender = payload.get("from")
+            if not sender or sender == self.id:
+                return
+            if payload.get("state") == "start":
+                self.others_typing.add(sender)
+            else:
+                self.others_typing.discard(sender)
 
-
-    async def break_silence(self):
-
-        if self.task_completed:
-            return
-        
-        prompt = """
-        The group has gone quiet.
-    
-        Continue the task naturally. Do one of these:
-        - look to see if the task has been completed 
-        - ask about a new concrete feature in your image
-        - summarize one difference or similarity already found and move to another feature
-        - mention a new visual detail that has not been discussed yet
-    
-        Keep it brief and conversational.
-    
-        Output valid JSON only:
-        {
-          "message": "your chat message"
-        }
-        """
-    
-        messages = [
-            {"role": "system", "content": self.prompt},
-            *self.history[:],
-            {"role": "user", "content": prompt}
-        ]
-    
-        response = await self.LLM.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            response_format={"type": "json_object"},
-        )
-    
-        resp = json.loads(response.choices[0].message.content)
-        message_text = resp["message"].strip()
-    
-        if not message_text:
-            return
-
-        if not self.sio.connected:
-            return
-        
+        @self.sio.on("task_complete")
+        async def on_task_complete(payload):
+            sender = payload.get("from")
+            if sender and sender != self.id and not self.task_completed:
+                self.history.append({
+                    "role": "user",
+                     "content": f"[{sender} has signalled they think the task is complete]"
+                })
             
-        self.history.append({
-            "role": "assistant",
-            "content": message_text
-        })
+
+
+    # --------- action functions
+
     
+    async def say(self, text: str, cooldown_range=(2, 8)):
+        """
+        This is where an agent sends a chat message to chatroom
+        """
+
+        text = (text or "").strip()
+        prefix = f"{self.id}:"
+
+        if text.startswith(prefix):
+            text = text[len(prefix):].strip()
+
+        if not text or self.task_completed or not self.sio.connected:
+            return
+
+        self.history.append({"role": "assistant", "content": f"{self.id}: {text}"})
         self.last_spoke_at = time.monotonic()
-        self.cooldown_seconds = random.uniform(6, 14)
+        self.cooldown_seconds = random.uniform(*cooldown_range)
+
+        await self.sio.emit("message",
+                            {"from": self.id, "room": self.room,
+                             "message": text })
+        
 
 
-        await self.sio.emit("message", {
-            "from": self.id,
-            "room": self.room,
-            "message": message_text
-        })    
+                
+    async def silence_monitor(self):
+        """
+        Handles how long to stay silent while monitoring activity in chatroom
+        """
+        while not self.task_completed:
+            await asyncio.sleep(random.uniform(4, 8))
+
+            try:
+                now = time.monotonic()
+                if now - self.last_heard_at < 6:
+                    continue
+                if now - self.last_spoke_at < self.cooldown_seconds:
+                    continue
+                if self.speak_lock.locked():
+                    continue
+                if self.pending_response_task and not self.pending_response_task.done():
+                    continue
+
+
+                # TODO - revisit this - giving different values to different
+                #        speakers for some randomness but unclear if it will
+                #        impact or skew speaker A over trials
+                #        was added to avoid breaking silence at same time but not sure if needed still
+                probability = 0.45 if self.id == "A" else 0.25
+
+                if random.random() < probability:
+                    await self.respond(situation=self.SILENCE_NOTE, cooldown_range=(6,14))
+            except Exception:
+                LOG.exception(f"{self.id}: silence monitor error")
+                                       
+            
     
+        
         
     async def maybe_respond_later(self, sender: str, text: str):
+        """
+        Add latency to agent responses and check last spoke and cooldown periods
+        to provide more human-like response timing
+        """
         try:
             # Human-ish latency.
             await asyncio.sleep(random.uniform(1.0, 3.0))
 
-            # Cooldown: do not jump back in immediately after speaking.
-            seconds_since_spoke = time.monotonic() - self.last_spoke_at
-            if seconds_since_spoke < self.cooldown_seconds:
+            # check to see if cooldown period greater than last spoke at and keep quiet if so
+            if time.monotonic() - self.last_spoke_at < self.cooldown_seconds:
                 LOG.info(f"{self.id} staying quiet: cooldown")
                 return
-
+            
             decision = await self.decide_whether_to_speak(sender, text)
-            LOG.info(f"{self.id} speak decision:", decision)
+            LOG.info(f"{self.id} speak decision: {decision}")
 
-            if decision.get("speak"):
+            if decision and decision.get("speak"):
                 await self.respond()
 
         except asyncio.CancelledError:
             LOG.info(f"{self.id} reconsidering because a newer message arrived")
+            raise
 
-    async def decide_whether_to_speak(self, sender: str, text: str) -> dict:
+        
+
+    async def decide_whether_to_speak(self, sender: str, text: str) -> dict | None:
         decision_prompt = f"""
         Decide whether Participant {self.id} should speak next.
 
         Last speaker: {sender}
         Last message: {text}
-
+        {self._typing_note()}
+        
         You are simulating a natural human chatroom participant.
 
         Speak only if one of these is true:
@@ -361,103 +406,59 @@ class Client:
         }}
         """
 
-        messages = [
-            {"role": "system", "content": self.prompt},
-            *self.history[:],
-            {"role": "user", "content": decision_prompt}
-        ]
-
-        response = await self.LLM.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            response_format={"type": "json_object"},
-        )
-
-        return json.loads(response.choices[0].message.content)
-
-    async def respond(self):
-        LOG.info(f"{self.id} responding")
-
-        resp = await self.take_turn()
-        
-        message_text = resp.get("message", "").strip()
-        action = resp.get("current_action", "").lower()
-
-        if "task_complete" in action:
-            self.task_completed = True
-            LOG.info(f"{self.id} sent a task_complete message")
-            await self.sio.emit("task_complete", {
-                "from": self.id,
-                "room": self.room,
-                "message": "TASK COMPLETE"
-            })
-
-            self._cancel_all_subtasks()
-            return
-        
-        if not message_text:
-            return
-
-        if "wait" in action:
-            LOG.info(f"{self.id} chose to wait")
-            return
-
-        if not self.sio.connected:
-            return
+        return await self._ask_json(decision_prompt)
         
 
-        self.history.append({
-            "role": "assistant",
-            "content": f"{self.id}: {message_text}"
-        })
 
-        self.last_spoke_at = time.monotonic()
-        self.cooldown_seconds = random.uniform(2, 8)
+    async def respond(self, situation: str = "", cooldown_range=(2,8)):
+        """
+        Take a turn (just one)
+        - ask the LLM what do
+        - do this
 
-        await self.sio.emit("message", {
-            "from": self.id,
-            "room": self.room,
-            "message": message_text
-        })
+        Params:
+            situation: optional str giving situational context for prompt
+            cooldown_range: default 2-8 secs
+        
 
-    async def take_turn(self) -> dict:
-        turn_prompt = """
-        Decide what to say next in the group discussion.
-
-        You may:
-        - describe a feature/item in your image
-        - ask another participant about a feature/item
-        - suggest a possible difference or similarity
-        - summarize what the group has established
-        - wait silently if you have nothing useful to add
-        - send a task_complete message indicating that you think group has completed the task
-
-        Keep the message concise and natural.
-
-        Output valid JSON only:
-        {
-          "current_action": "say | ask | suggest_difference | summarize | wait | task_complete",
-          "message": "the chat message to send, or empty string if waiting or task_complete"
-        }
         """
 
-        messages = [
-            {"role": "system", "content": self.prompt},
-            *self.history[:],
-            {"role": "user", "content": turn_prompt}
-        ]
+        async with self.speak_lock:
+            if self.task_completed:
+                return
 
-        response = await self.LLM.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            response_format={"type": "json_object"},
-        )
+            if time.monotonic() - self.last_spoke_at < self.cooldown_seconds:
+                return
 
-        resp = json.loads(response.choices[0].message.content)
-        LOG.info(f"{self.id} turn:", resp)
+        # construct turn taking prompt    
+        prompt = "\n".join(p for p in (situation, self._typing_note(), self.TURN_PROMPT) if p)
 
-        return resp
+        resp = await self._ask_json(prompt)
 
+        if not resp:
+            return
+
+        action = str(resp.get("current_action","")).lower()
+        LOG.info(f"{self.id} turn: {resp}")
+
+        # take turn action
+        if "task_complete" in action:
+            await self.signal_complete()
+        elif "wait" in action:
+            LOG.info(f"{self.id} chose to wait")
+        else:
+            await self.say(resp.get("message", ""), cooldown_range)
+            
+
+    async def signal_complete(self):
+        self.task_completed = True
+        LOG.info(f"{self.id} signalled task complete")
+
+        if self.sio.connected:
+            await self.sio.emit("task_complete", {"from": self.id, "room": self.room })
+                                
+
+        
     async def run(self, auth):
 
 
@@ -467,21 +468,16 @@ class Client:
                                    auth=auth,
                                    transports=['websocket','polling'])
 
-            await self.sio.emit("message", {
-                "from": self.id,
-                "room": self.room,
-                "message": "Hi, I’m here!"
-            })
-
+            await self.say(self.INITIAL_GREETING)
             await self.sio.wait()
 
         except asyncio.CancelledError:
             LOG.info(f"Agent {self.id} received cancellation request.")
-        except Exception as e:
-            LOG.error(f"Agent {self.id} encountered an error: {e}")
+            raise
+        except Exception:
+            LOG.exception(f"Agent {self.id} encountered an error")
         finally:
             self._cancel_all_subtasks()
-
             if self.sio.connected:
                 await self.sio.disconnect()
             
@@ -495,24 +491,3 @@ class Client:
             
     
 
-def run_agent(agent_id, room_id):
-
-    # which LLM model to use
-    MODEL_NAME = MODEL_DICT[agent_id]
-
-
-    
-    client = Client(
-        agent_id,
-        room_id,
-        f"image{agent_id}_nocomments.svg",
-        "ws://localhost:5555"
-    )
-
-    auth = {
-        "room": ROOM,
-        "sid": agent_id,
-        "token": SK
-    }
-
-    asyncio.run(client.run(auth))

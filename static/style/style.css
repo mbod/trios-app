@@ -114,3 +114,16 @@ h2 {
     display: inline;
 }
    
+#chat-column {
+  display: flex;
+  flex-direction: column;
+  flex: 65%;
+}
+
+#typing-indicator {
+  min-height: 1.4em;
+  padding: 2px 6px;
+  font-size: 0.85em;
+  font-style: italic;
+  color: #666;
+}

@@ -6,43 +6,50 @@
 # stream of messages captured in sequence
 #
 
+import os
+import re
+from dotenv import load_dotenv
+from flask_socketio import SocketIO, join_room, leave_room, emit
+from event_log import EventLog
 
-from flask import Flask, request, render_template, session, url_for, jsonify
-from flask_socketio import SocketIO, join_room, leave_room, send, emit
+from flask import Flask, request, render_template, session, jsonify
+
 import logging
-from  multiprocessing import Queue, Process
-from uuid import uuid4
-from collections import defaultdict
-
 import requests
 
+_ = load_dotenv()
 
-# NEEDED?
-#from client_ws import run_agent
+ROOM_PATTERN = re.compile(r"^[A-z0-9_-]{1,32}$")
 
 
 PARTICIPANTS=['A','B','C']
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'coll@bplan!'
+app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
+AGENT_TOKEN = os.environ['AGENT_TOKEN']
+event_log = EventLog(os.environ.get('LOG_DIR', 'logs'))
 
-socketio = SocketIO(app)
-
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
+
+
+socketio = SocketIO(app, logger=True, engineio_logger=True)
+
+
 
 
 # TODO: move messages data structure
 #       to a persistent db
 messages = []
 
-rooms = defaultdict(list)
 
 # TODO: migrate to redis
 connected_clients = {}
 
 # create process queue and agent dictionary for agents
-agent_queue = Queue()
-agents = {}
+# agent_queue = Queue()
+# agents = {}
 
 
 AGENT_MANAGER_URL = "http://127.0.0.1:5556"
@@ -51,27 +58,28 @@ AGENT_MANAGER_URL = "http://127.0.0.1:5556"
 
 # --- app routes --------------------------------------------------
 
-@app.route('/chatroom')
-def chatroom():
+@app.route('/chatroom', defaults={'room_id': 'test'})
+@app.route('/chatroom/<room_id>')
+def chatroom(room_id):
     '''
     Chatroom view
     '''
-
-    session.clear()
-    session['room'] = 'test'
+    if not ROOM_PATTERN.match(room_id):
+        return "Invalid room_id", 400
     
-    room = session.get('room')
+    session.clear()
+    session['room'] = room_id
 
-    if request.args.get('user_id', False):
-        PARTICIPANTS = [ request.args.get('user_id') ]
-    else:
-        PARTICIPANTS = ['A','B','C']
+    user_id = request.args.get('user_id')
 
+    participants = [user_id] if user_id else ['A','B','C']
+    
+    
     imagepath = request.args.get('imagepath', 'image')
         
     return render_template('chatroom.html',
-                           room=room,
-                           participants=PARTICIPANTS,
+                           room=room_id,
+                           participants=participants,
                            imagepath = imagepath
                            )
 
@@ -83,31 +91,6 @@ def create_room():
     return render_template('create_room.html')
 
 
-
-"""
-@app.route('/add_agent/<agent_id>/to/<room_id>')
-def add_agent(agent_id, room_id):
-
-    # check room_id to see if agent already in room
-    if agent_id in rooms.get(room_id, []):
-        return f"Agent {agent_id} already in Room {room_id}"
-    
-    # Generate a unique task ID
-    task_id = str(uuid4())
-
-    rooms[room_id].append(agent_id)
-    agents[task_id] = {"status": "processing", "result": None}
-
-    # Start a child process to agent
-    process = Process(
-        target=run_agent,
-        args=(agent_id, room_id)  
-    )
-    process.start()
-    process.join()
- 
-    return f"Agent {agent_id} started in Room {room_id} with TaskID {task_id}"
-"""
 
 def require_user():
     return {'user': True}
@@ -121,7 +104,7 @@ def add_agent(agent_id, room_id):
 
 
     imagepath = request.args.get('imagepath', 'image')
-    print(f'--- imagepath {imagepath.split("/")}')
+
     
     # Delegate spawning to the Agent Manager daemon
     try:
@@ -129,7 +112,7 @@ def add_agent(agent_id, room_id):
             f"{AGENT_MANAGER_URL}/start",
             json={"agent_id": agent_id,
                   "room_id": room_id,
-                  "image_path": imagepath.split('/')},
+                  "image_path": imagepath},
             timeout=3
         )
         return jsonify(r.json()), r.status_code
@@ -154,7 +137,21 @@ def stop_agent(agent_id, room_id):
     except requests.exceptions.ConnectionError:
         return jsonify({"error": "Agent manager service is not running on port 5556"}), 503
 
-                           
+@app.route("/list_agents")
+def list_agents():
+    auth_check = require_user()
+    if not isinstance(auth_check, dict):
+        return auth_check
+
+    try:
+        r = requests.get(
+            f"{AGENT_MANAGER_URL}/list",
+            timeout=3
+        )
+        return jsonify(r.json()), r.status_code
+    except request.exceptions.ConnectionError:
+        return jsonify({"error": "Agent manager service is not running on port 5556"}), 503
+        
 
 
 # ----- SOCKETIO handlers -----------------------------------------
@@ -164,39 +161,60 @@ def handle_connect(auth):
     '''
     WS client connecting to room
     '''
-    print('CONNECTION ATTEMPT', auth)
-    logger.info(f'Connection request: {auth}')
 
+    auth = auth or {}
     sid = request.sid
     
-    if auth and auth.get('token') == app.config['SECRET_KEY']:
-        connected_clients[sid] = {
-            'client': sid,
-            'room': auth.get('room')
-        }
 
-    else:
-        if not session.get('room'):
+    logger.info(f'Connection request: {sid} {list(auth)}')
+
+    
+    if auth.get('token') == AGENT_TOKEN:
+        identity = { 'id': auth.get('agent_id') or auth.get('sid'),
+                     'room': auth.get('room'),
+                     'kind': 'agent'
+                    }
+
+        if not identity['id']:
             return False
 
-        connected_clients[sid] = {
-            'client': sid,
-            'room': 'test'
-        }
+    else:
+        user_id = auth.get('user_id')
+        identity = {'id': user_id or f'observer-{sid[:6]}',
+                    'room': auth.get('room') or session.get('room'),
+                    'kind': 'human' if user_id else 'observer'}
+
+    room = identity["room"]
+
+    if not room or not ROOM_PATTERN.match(room):
+        logger.warning(f"Rejected sid={sid}: invalid room {room}")
+        return False
+
+    connected_clients[sid] = identity
     
     logger.info(f'Connected clients: {connected_clients}')
 
     # join room
-    join_room(connected_clients[sid]['room'])
+    join_room(room)
+
+    event_log.record(room, 'join',
+                     sender=identity['id'],
+                     kind=identity['kind'])
+                     
 
 
 @socketio.on('disconnect')
-def handle_disconnect():
+def handle_disconnect(reason=None):
     '''
     WS client leaves a room
     '''
-    room = session.get('room')
-    leave_room(room)
+    client = connected_clients.pop(request.sid, None)
+    if client:
+        leave_room(client['room'])
+        event_log.record(client['room'], 'leave',
+                         sender=client['id'],
+                         kind=client['kind'])
+    
 
 @socketio.on('message')
 def handle_message(payload):
@@ -204,19 +222,54 @@ def handle_message(payload):
     logger.info('MESSAGE - ', payload, request.sid)
 
     client = connected_clients.get(request.sid)
-    logger.info(f'CLIENT ID: {client}')
-    #if not client:
-    #    return
-    
-    room = client['room'] # session.get('room')
+
+    if not client:
+        return
+
+    payload = payload or {}
+    text = str(payload.get('message','')).strip()
+
+    if not text:
+        return
     
     # message
     sender = payload['from']
-    message = payload['message']    
+    event = event_log.record(client['room'], 'message',
+                             sender=sender,
+                             kind=client['kind'],
+                             payload={'message': text})
+    
+    
+    emit('message', { 'from': sender, 'message': text,
+                      'seq': event['seq'], 'ts': event['ts']},
+         to=client['room'])
 
-    logger.info(f'Sending {payload} to {room}')
-    emit(payload, to=room)
+@socketio.on('typing')
+def handle_type(payload):
+    '''
+    event for user typing or agent simulated typing
+    '''
+    client = connected_clients.get(request.sid)
 
+    if not client:
+        return
+
+    payload = payload or {}
+    state = payload.get('state')      # start | stop
+    if state not in ('start', 'stop'):
+        return
+
+    sender = payload['from']
+
+    event_log.record(client['room'], 'typing',
+                     sender=sender, kind=client['kind'],
+                     payload={'state': state})
+
+    emit('typing', {'from': sender, 'state': state},
+         to=client['room'], include_self=False)
+                                            
+
+    
     
 @socketio.on('task_begin')
 def handle_begin_task(payload):
@@ -230,14 +283,27 @@ def handle_end_task(payload):
     logger.info(f'TASK COMPLETE: {payload} - request_id: {request.sid}')
 
     client = connected_clients.get(request.sid)
-    room = client['room']
-    
-    sender = payload['from']
-    logging.info(f'Client {sender} has sent a TASK COMPLETE signal')
 
-    emit(payload, to=room)
+    if not client:
+        return
+
+    payload = payload or {}
+    sender = client['id']  # removed - payload['from'] 
     
+    logger.info(f'Client {sender} has sent a TASK COMPLETE signal')
+
+    event = event_log.record(client['room'], 'task_complete',
+                             sender=sender, kind=client['kind'])
+    
+    emit('task_complete', {'from': sender, 'seq': event['seq'],
+                           'ts': event['ts']},
+         to=client['room'])
+                                                        
     
 if __name__ == "__main__":
 
+
+    # NOTE for deployment
+    # turn logging off socketio = SocketIO(app)
+    
     socketio.run(app, port=5555, debug=True)
