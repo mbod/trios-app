@@ -41,6 +41,12 @@ MODEL_DICT = {
     'C': 'gpt-6-luna'
 }
 
+MODEL_DICT = {
+    'A': 'gpt-5-nano',
+    'B': 'gpt-3.5-turbo',
+    'C': 'gpt-6-luna'
+}
+
 
 
 class Client:
