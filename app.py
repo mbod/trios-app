@@ -6,29 +6,41 @@
 # stream of messages captured in sequence
 #
 
+import os
+from dotenv import load_dotenv
+from flask_socketio import SocketIO, join_room, leave_room, emit
+from event_log import EventLog
 
 from flask import Flask, request, render_template, session, url_for, jsonify
-from flask_socketio import SocketIO, join_room, leave_room, send, emit
+
 import logging
-from  multiprocessing import Queue, Process
-from uuid import uuid4
+
+
+
 from collections import defaultdict
 
 import requests
 
 
-# NEEDED?
-#from client_ws import run_agent
+
+_ = load_dotenv()
 
 
 PARTICIPANTS=['A','B','C']
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'coll@bplan!'
+app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
+AGENT_TOKEN = os.environ['AGENT_TOKEN']
+event_log = EventLog(os.environ.get('LOG_DIR', 'logs'))
 
-socketio = SocketIO(app)
-
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
+
+
+socketio = SocketIO(app, logger=True, engineio_logger=True)
+
+
 
 
 # TODO: move messages data structure
@@ -41,8 +53,8 @@ rooms = defaultdict(list)
 connected_clients = {}
 
 # create process queue and agent dictionary for agents
-agent_queue = Queue()
-agents = {}
+# agent_queue = Queue()
+# agents = {}
 
 
 AGENT_MANAGER_URL = "http://127.0.0.1:5556"
@@ -51,14 +63,17 @@ AGENT_MANAGER_URL = "http://127.0.0.1:5556"
 
 # --- app routes --------------------------------------------------
 
-@app.route('/chatroom')
-def chatroom():
+@app.route('/chatroom/<room_id>')
+def chatroom(room_id):
     '''
     Chatroom view
     '''
 
     session.clear()
-    session['room'] = 'test'
+
+    room_id = room_id if room_id else 'test'
+    
+    session['room'] = room_id
     
     room = session.get('room')
 
@@ -164,39 +179,57 @@ def handle_connect(auth):
     '''
     WS client connecting to room
     '''
+
+    auth = auth or {}
+    sid = request.sid
+    
     print('CONNECTION ATTEMPT', auth)
     logger.info(f'Connection request: {auth}')
 
-    sid = request.sid
     
-    if auth and auth.get('token') == app.config['SECRET_KEY']:
-        connected_clients[sid] = {
-            'client': sid,
-            'room': auth.get('room')
-        }
+    if auth.get('token') == AGENT_TOKEN:
+
+        identity = { 'id': auth.get('agent_id') or auth.get('sid'),
+                     'room': auth.get('room'),
+                     'kind': 'agent'
+                    }
+
+    elif session.get('room'):
+        identity = {'id': auth.get('user_id'),
+                    'room': auth.get('room'),
+                    'kind': 'human' }
 
     else:
-        if not session.get('room'):
-            return False
+        return False
 
-        connected_clients[sid] = {
-            'client': sid,
-            'room': 'test'
-        }
+    if not identity['room']:
+        return False
+
+    connected_clients[sid] = identity
     
     logger.info(f'Connected clients: {connected_clients}')
 
     # join room
-    join_room(connected_clients[sid]['room'])
+    join_room(identity['room'])
+
+    event_log.record(identity['room'], 'join',
+                     sender=identity['id'],
+                     kind=identity['kind'])
+                     
 
 
 @socketio.on('disconnect')
-def handle_disconnect():
+def handle_disconnect(reason=None):
     '''
     WS client leaves a room
     '''
-    room = session.get('room')
-    leave_room(room)
+    client = connected_clients.pop(request.sid, None)
+    if client:
+        leave_room(client['room'])
+        event_log.record(client['room'], 'leave',
+                         sender=client['id'],
+                         kind=client['kind'])
+    
 
 @socketio.on('message')
 def handle_message(payload):
@@ -205,18 +238,53 @@ def handle_message(payload):
 
     client = connected_clients.get(request.sid)
     logger.info(f'CLIENT ID: {client}')
-    #if not client:
-    #    return
-    
-    room = client['room'] # session.get('room')
+    if not client:
+        return
+
+    payload = payload or {}
+    text = str(payload.get('message','')).strip()
+
+    if not text:
+        return
     
     # message
     sender = payload['from']
-    message = payload['message']    
+    event = event_log.record(client['room'], 'message',
+                             sender=sender,
+                             kind=client['kind'],
+                             payload={'message': text})
+    
+    
+    emit('message', { 'from': sender, 'message': text,
+                      'seq': event['seq'], 'ts': event['ts']},
+         to=client['room'])
 
-    logger.info(f'Sending {payload} to {room}')
-    emit(payload, to=room)
+@socketio.on('typing')
+def handle_type(payload):
+    '''
+    event for user typing or agent simulated typing
+    '''
+    client = connected_clients.get(request.sid)
 
+    if not client:
+        return
+
+    payload = payload or {}
+    state = payload.get('state')      # start | stop
+    if state not in ('start', 'stop'):
+        return
+
+    sender = payload['from']
+
+    event_log.record(client['room'], 'typing',
+                     sender=sender, kind=client['kind'],
+                     payload={'state': state})
+
+    emit('typing', {'from': sender, 'state': state},
+         to=client['room'], include_self=False)
+                                            
+
+    
     
 @socketio.on('task_begin')
 def handle_begin_task(payload):
@@ -230,13 +298,22 @@ def handle_end_task(payload):
     logger.info(f'TASK COMPLETE: {payload} - request_id: {request.sid}')
 
     client = connected_clients.get(request.sid)
-    room = client['room']
-    
+
+    if not client:
+        return
+
+    payload = payload or {}
     sender = payload['from']
+    
     logging.info(f'Client {sender} has sent a TASK COMPLETE signal')
 
-    emit(payload, to=room)
+    event = event_log.record(client['room'], 'task_complete',
+                             sender=sender, kind=client['kind'])
     
+    emit('task_complete', {'from': sender, 'seq': event['seq'],
+                           'ts': event['ts']},
+         to=client['room'])
+                                                        
     
 if __name__ == "__main__":
 
