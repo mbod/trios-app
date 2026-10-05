@@ -8,12 +8,11 @@ import socketio
 import logging
 from pathlib import Path
 
-# TODO: Using openai API Async
-#       Update to use langchain to allow multiple
-#       LLMs
-#       Can use asyncio and `.ainvoke` function
-#       See 
-from openai import AsyncOpenAI
+from config import ModelSpec
+from llm import build_chat_model, structured
+from schemas import SpeakDecision, TurnAction
+
+
 from dotenv import load_dotenv
 
 _ = load_dotenv()
@@ -34,17 +33,23 @@ LOG = logging.getLogger(__name__)
 # gpt-5.4-nano
 
 
-DEFAULT_MODEL = "gpt-6-luna"
-MODEL_DICT = {
-    'A': 'gpt-6-luna',
-    'B': 'gpt-6-luna',
-    'C': 'gpt-6-luna'
+
+
+MODELS = {
+    "gpt":     ModelSpec(provider="openai", model="gpt-6-luna"),
+    "claude":  ModelSpec(provider="anthropic", model="claude-haiku-4-5-20251001"),
+    "gemini":  ModelSpec(provider="google_genai", model="gemini-3.5-flash-lite",
+                         structured_output="json_schema"),
+    "local":   ModelSpec(provider="openai_compatible", model="llama3.1:latest",
+                         base_url="http://localhost:11434/v1")
 }
 
-MODEL_DICT = {
-    'A': 'gpt-5-nano',
-    'B': 'gpt-3.5-turbo',
-    'C': 'gpt-6-luna'
+DEFAULT_MODEL = "gpt"
+
+AGENT_MODELS = {
+    "A" : "gpt",
+    "B" : "claude",
+    "C" : "local"
 }
 
 
@@ -126,11 +131,6 @@ class Client:
 
     Keep the message concise and natural.
 
-    Output valid JSON only:
-    {
-      "current_action": "say | ask | suggest_difference | summarize | wait | task_complete",
-      "message": "the chat message to send, or empty string if waiting or task_complete"
-    }
     """
 
     INITIAL_GREETING = "Hi! I'm here ready to work on the task"
@@ -148,7 +148,13 @@ class Client:
         self.ws_url = ws_url
         self.socketio_path = socketio_path
 
-        self.model = MODEL_DICT.get(id, DEFAULT_MODEL)
+        self.model_name = AGENT_MODELS.get(id, DEFAULT_MODEL)
+        self.model_spec = MODELS[self.model_name]
+        chat_model = build_chat_model(self.model_spec)
+        self.decider = structured(chat_model, SpeakDecision, self.model_spec)
+        self.actor = structured(chat_model, TurnAction, self.model_spec)
+
+        
         # load the specific image file for instance participant
         self.image = Path(image_file).read_text()
 
@@ -159,7 +165,7 @@ class Client:
 
         self.history = []
         self.sio = socketio.AsyncClient()
-        self.LLM = AsyncOpenAI()
+
 
         # flag to indicate whether agent has
         # sent completion message and should stop working
@@ -178,17 +184,18 @@ class Client:
         self.silence_task = None
         self.pending_response_task = None
 
-        LOG.info(f"Agent {self.id} using model {self.model}, image {Path(image_file).name}")
+        LOG.info(f"Agent {self.id} using model {self.model_spec.model} from {self.model_spec.provider}, image {Path(image_file).name}")
         self.register_handlers()
 
 
 
     # --- helper functions
 
-    async def _ask_json(self, instruction: str) -> dict | None:
+    async def _ask(self, runnable, instruction: str) -> dict | None:
         """
+        Call a structured model (specific LLM)
         Send chat history and instruction to the LLM;
-        return parsed JSON or None
+        return parsed object or None
         """
 
         messages = [
@@ -198,17 +205,22 @@ class Client:
         ]
 
         try:
-            response = await self.LLM.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                response_format={"type": "json_object"}
-                )
-
-            return json.loads(response.choices[0].message.content)
-        except:
+            result = await runnable.ainvoke(messages)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
             LOG.exception(f"{self.id}: LLM call failed -- {messages}")
             return None
 
+        usage = getattr(result["raw"], "usage_metadata", None)
+        if result["parsing_error"]:
+            LOG.warning(f"{self.id}: unparseable output: {result['parsing_error']} | raw: {result['raw']}")
+
+            return None
+
+        LOG.info(f"{self.id}: {type(result['parsed']).__name__} tokens={usage}")
+        return result["parsed"]
+        
 
     def _typing_note(self) -> str:
         typing = sorted(self.others_typing)
@@ -368,7 +380,7 @@ class Client:
             decision = await self.decide_whether_to_speak(sender, text)
             LOG.info(f"{self.id} speak decision: {decision}")
 
-            if decision and decision.get("speak"):
+            if decision and decision.speak:
                 await self.respond()
 
         except asyncio.CancelledError:
@@ -399,14 +411,9 @@ class Client:
         - The latest message is better answered by someone else.
         - You recently spoke and should let others talk.
 
-        Output valid JSON only:
-        {{
-          "speak": true or false,
-          "reason": "brief reason"
-        }}
         """
 
-        return await self._ask_json(decision_prompt)
+        return await self._ask(self.decider, decision_prompt)
         
 
 
@@ -433,21 +440,20 @@ class Client:
         # construct turn taking prompt    
         prompt = "\n".join(p for p in (situation, self._typing_note(), self.TURN_PROMPT) if p)
 
-        resp = await self._ask_json(prompt)
+        resp = await self._ask(self.actor, prompt)
 
         if not resp:
             return
 
-        action = str(resp.get("current_action","")).lower()
         LOG.info(f"{self.id} turn: {resp}")
 
         # take turn action
-        if "task_complete" in action:
+        if resp.current_action == "task_complete":
             await self.signal_complete()
-        elif "wait" in action:
+        elif resp.current_action == "wait":
             LOG.info(f"{self.id} chose to wait")
         else:
-            await self.say(resp.get("message", ""), cooldown_range)
+            await self.say(resp.message, cooldown_range)
             
 
     async def signal_complete(self):
