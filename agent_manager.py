@@ -6,12 +6,21 @@ import os
 import re
 from pathlib import Path
 
+from pydantic import ValidationError
+
+from config import load_experiment, load_models
+from tasks import Task
+
 from aiohttp import web
 from dotenv import load_dotenv
 
 from client_ws_v2 import Client
 
 _ = load_dotenv()
+
+
+DEFAULT_EXPERIMENT = os.environ.get("EXPERIMENT", "pilot")
+
 AGENT_TOKEN = os.environ['AGENT_TOKEN']
 
 logging.basicConfig(
@@ -89,14 +98,23 @@ async def start_agent_handler(request):
             "message": f"Agent {agent_id} is already running in room {room_id}"
         })
 
-    client = Client(
-        id=agent_id,
-        room=room_id,
-        image_file=str(image_file),
-        ws_url=BASE_WS_URL,
-        socketio_path=SOCKETIO_PATH
-    )
 
+    exp_name = data.get("experiment") or DEFAULT_EXPERIMENT
+
+    try:
+        models = load_models()
+        exp = load_experiment(exp_name, models)
+        cfg = exp.agent(agent_id)
+        client = Client(
+            id=agent_id, room=room_id, image_file=str(image_file),
+            ws_url=BASE_WS_URL, socketio_path=SOCKETIO_PATH,
+            task=Task(exp.task), cfg=cfg,
+            model_spec=models[cfg.model], seed=exp.seed
+        )
+    except (FileNotFoundError, ValueError, ValidationError) as e:
+        return web_json_response({
+            "error": f"config: {e}"}, status=400)
+    
     auth = {
         "room": room_id,
         "sid": agent_id,

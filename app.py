@@ -13,9 +13,13 @@ from flask_socketio import SocketIO, join_room, leave_room, emit
 from event_log import EventLog
 
 from flask import Flask, request, render_template, session, jsonify
-
+from datetime import datetime
 import logging
 import requests
+
+
+
+from config import load_experiment, load_models, snapshot
 
 _ = load_dotenv()
 
@@ -95,6 +99,56 @@ def create_room():
 def require_user():
     return {'user': True}
 
+
+@app.route("/start_trial/<room_id>")
+def start_trial(room_id):
+    auth_check = require_user()
+    if not isinstance(auth_check, dict):
+        return auth_check
+
+    if not ROOM_PATTERN.match(room_id):
+        return jsonify({"error": "invalid room id"}), 400
+
+    if event_log.active_trial(room_id):
+        return jsonify({"error": f"room {room_id} already has an active trial",
+                        "active": event_log.active_trial(room_id)}), 409
+
+    trial_id = request.args.get("trial_id") or f"{room_id}-{datetime.now():%Y%m%d-%H%M%S}"
+    if not TRIAL_PATTERN.match(trial_id):
+        return jsonify({"error": "invalid trial id"}), 400
+    if event_log.trial_exists(trial_id):
+        return jsonify({"error": f"trial {trial_id} already has a log file"}), 409
+
+    meta = {k: request.args[k] for k in TRIAL_META_FIELDS if request.args.get(k)}
+    meta["roster"] = [{"id": c["id"], "kind": c["kind"]}
+                      for c in connected_clients.values() if c["room"] == room_id]
+
+    try:
+        r = requests.get(f"{AGENT_MANAGER_URL}/config",
+                         params={"room_id": room_id}, timeout=3)
+        meta["agent_configs"] = r.json().get("agents", {})
+    except requests.exceptions.ConnectionError:
+        meta["agent_configs"] = {}
+
+    event = event_log.start_trial(room_id, trial_id, meta)
+    socketio.emit("trial_start", { "trial_id": trial_id, **meta}, to=room_id)
+
+    return jsonify(event)
+
+
+@app.route("/end_trial/<room_id>")
+def end_trial(room_id):
+    auth_check = require_user()
+    if not isinstance(auth_check, dict):
+        return auth_check
+
+    if not event_log.active_trial(room_id):
+        return jsonify({"error": f"no active trial in room {room_id}"}), 404
+
+    event = event_log.end_trial(room_id)
+    socketio.emit("trial_end", {"trial_id": event["trial_id"]}, to=room_id)
+    return jsonify(event)
+
 #@app.route(f"{prefix.rstrip('/')}/add_agent/<agent_id>/to/<room_id>")
 @app.route("/add_agent/<agent_id>/to/<room_id>")
 def add_agent(agent_id, room_id):
@@ -112,7 +166,9 @@ def add_agent(agent_id, room_id):
             f"{AGENT_MANAGER_URL}/start",
             json={"agent_id": agent_id,
                   "room_id": room_id,
-                  "image_path": imagepath},
+                  "image_path": imagepath,
+                  "experiment": request.args.get("experiment")
+                  },
             timeout=3
         )
         return jsonify(r.json()), r.status_code

@@ -8,9 +8,10 @@ import socketio
 import logging
 from pathlib import Path
 
-from config import ModelSpec
+from config import AgentConfig, ModelSpec
+from tasks import Task
 from llm import build_chat_model, structured
-from schemas import SpeakDecision, TurnAction
+from schemas import SpeakDecision
 
 
 from dotenv import load_dotenv
@@ -32,107 +33,32 @@ LOG = logging.getLogger(__name__)
 # gpt-5.6-luna
 # gpt-5.4-nano
 
+# claude-haiku-4-5-20251001
 
 
-
+"""
 MODELS = {
-    "gpt":     ModelSpec(provider="openai", model="gpt-6-luna"),
-    "claude":  ModelSpec(provider="anthropic", model="claude-haiku-4-5-20251001"),
+    "gpt":     ModelSpec(provider="openai", model="gpt-6-luna"), 
+    "claude":  ModelSpec(provider="anthropic", model="claude-haiku-5-5"),
     "gemini":  ModelSpec(provider="google_genai", model="gemini-3.5-flash-lite",
                          structured_output="json_schema"),
-    "local":   ModelSpec(provider="openai_compatible", model="llama3.1:latest",
+    "local":   ModelSpec(provider="openai_compatible", model="llama3.2:latest",
                          base_url="http://localhost:11434/v1")
 }
+"""
 
 DEFAULT_MODEL = "gpt"
 
+"""
 AGENT_MODELS = {
     "A" : "gpt",
     "B" : "claude",
-    "C" : "local"
+    "C" : "gemini"
 }
-
+"""
 
 
 class Client:
-    SYSTEM_PROMPT = """
-    You are a member of a group of 3 people working on a task together.
-    You are Participant {part_id}.
-
-    Each of you has an image with 9 items arranged in a 3x3 grid.
-
-    1 2 3
-    4 5 6
-    7 8 9
-    
-    You all have the same 9 items but arranged differently.
-    However, there are two sequences of 3 items that are ordered
-    in the same way same across all three images.
-
-    Examples could be:
-    1. horizontal (e.g. row 1, items 1 2 3 are the same)
-    2. vertical (e.g. col 2, items 2 5 8 are the same)
-    3. diagonal (e.g. items 1 5 9 are the same)
-
-    Your task is to discuss together and describe the items in your
-    grid to each other so that you can agree upon the two shared
-    sequences.
-
-    Once you have agreed that you have identified the two shared
-    sequences the task is complete and you should stop.
-    
-    
-    For instance:
-
-    ImgA    ImgB     ImgC
-    -----   -----    -----
-    P Q R   P Q R    P Q R
-    Z S X   M S N    N S Z
-    M N T   X Z T    M X T
-
-    Each of you has one of the three images to complete the task
-    you would go around and describe your images until you agreed
-    in the above example:
-    1. top row = P Q R
-    2. TL-BR diagonal = P S T
-    are the same across your three images.
-    
-    Behave like an engaged member of a small group collaborating on a task:
-    - Do not respond to every message.
-    - Speak when you have useful new information.
-    - Answer direct questions.
-    - Avoid repeating yourself.
-    - Let others speak.
-    - If you just spoke, wait before speaking again.
-    - Help keep the task on track
-    - When you all agree the task is complete you should stop
-
-    IMAGE:
-    {image}
-    """
-
-    SILENCE_NOTE = """
-        The group has gone quiet. If you have something useful to add, continue 
-        the task naturally: check whether the task has been completed, ask about 
-        or describe an item not yet discussed, or summarize what the group has 
-        established so far.
-    """
-
-    TURN_PROMPT = """
-    Decide what to say next in the group discussion.
-
-    You may:
-    - describe a feature/item in your image
-    - ask another participant about a feature/item
-    - suggest a possible difference or similarity
-    - summarize what the group has established
-    - wait silently if you have nothing useful to add
-    - send a task_complete message indicating that you think group has completed the task
-
-    Keep the message concise and natural.
-
-    """
-
     INITIAL_GREETING = "Hi! I'm here ready to work on the task"
     
 
@@ -140,7 +66,10 @@ class Client:
                  room: str,
                  image_file: str,
                  ws_url: str,
-                 socketio_path: str):
+                 socketio_path: str,
+                 task: Task, cfg: AgentConfig,
+                 model_spec: ModelSpec, seed: int | None = None
+                 ):
 
         
         self.id = id
@@ -148,21 +77,28 @@ class Client:
         self.ws_url = ws_url
         self.socketio_path = socketio_path
 
-        self.model_name = AGENT_MODELS.get(id, DEFAULT_MODEL)
-        self.model_spec = MODELS[self.model_name]
+        self.task = task
+        self.cfg = cfg
+
+        self.model_spec = model_spec
+        self._check_supported()
+
+        self.rng = random.Random(f"{seed}-{room}-{id}") if seed is not None else random.Random()
+
+
+        self.image = Path(image_file).read_text()
+        others = [part for part in task.defn.participants if part != id]  # ids of other participants (? NEEDED)
+
+        # create system prompt from prompt template with participant specific materials
+        self.prompt = task.render("system", participant=id, others=others, materials=self.image)
+        
         chat_model = build_chat_model(self.model_spec)
         self.decider = structured(chat_model, SpeakDecision, self.model_spec)
-        self.actor = structured(chat_model, TurnAction, self.model_spec)
+        self.actor = structured(chat_model, task.TurnAction, self.model_spec)
 
         
-        # load the specific image file for instance participant
-        self.image = Path(image_file).read_text()
-
-        self.prompt = self.SYSTEM_PROMPT.format(
-            part_id=self.id,
-            image=self.image
-        )
-
+        
+        
         self.history = []
         self.sio = socketio.AsyncClient()
 
@@ -176,7 +112,7 @@ class Client:
         # Turn taking state
         self.last_spoke_at = 0.0
         self.last_heard_at = time.monotonic()
-        self.cooldown_seconds = random.uniform(6,14)
+        self.cooldown_seconds = self.rng.uniform(*cfg.timing.cooldown_after_silence_s)
         self.speak_lock = asyncio.Lock()
 
 
@@ -188,6 +124,23 @@ class Client:
         self.register_handlers()
 
 
+    def _check_supported(self):
+        """
+        Check settings passed in initialization and refuse if not supported
+        """
+        unsupported = []
+        if self.cfg.turn.mode != "decide_then_act":
+            unsupported.append(f"turn.mode={self.cfg.turn.mode}")
+
+        if self.cfg.turn.interrupt != "cancel":
+            unsupported.append(f"turn.interrupt={self.cfg.turn.interrupt}")
+
+        if self.cfg.perception != "raw":
+            unsupported.append(f"perception={self.cfg.perception}")
+
+        if unsupported:
+            raise ValueError(f"agent {self.id}: not implemented yet: {', '.join(unsupported)}")
+        
 
     # --- helper functions
 
@@ -320,7 +273,7 @@ class Client:
 
         self.history.append({"role": "assistant", "content": f"{self.id}: {text}"})
         self.last_spoke_at = time.monotonic()
-        self.cooldown_seconds = random.uniform(*cooldown_range)
+        self.cooldown_seconds = self.rng.uniform(*cooldown_range)
 
         await self.sio.emit("message",
                             {"from": self.id, "room": self.room,
@@ -333,13 +286,18 @@ class Client:
         """
         Handles how long to stay silent while monitoring activity in chatroom
         """
+
+
+        silence = self.cfg.silence
         while not self.task_completed:
-            await asyncio.sleep(random.uniform(4, 8))
+            await asyncio.sleep(self.rng.uniform(*silence.check_every_s))
 
             try:
                 now = time.monotonic()
-                if now - self.last_heard_at < 6:
+                if now - self.last_heard_at < silence.threshold_s:
                     continue
+
+
                 if now - self.last_spoke_at < self.cooldown_seconds:
                     continue
                 if self.speak_lock.locked():
@@ -347,15 +305,10 @@ class Client:
                 if self.pending_response_task and not self.pending_response_task.done():
                     continue
 
+                if self.rng.random() < silence.probability:
+                    await self.respond(situation=self.task.render('silence'),
+                                       cooldown_range=self.cfg.timming.cooldown_after_silence_s)
 
-                # TODO - revisit this - giving different values to different
-                #        speakers for some randomness but unclear if it will
-                #        impact or skew speaker A over trials
-                #        was added to avoid breaking silence at same time but not sure if needed still
-                probability = 0.45 if self.id == "A" else 0.25
-
-                if random.random() < probability:
-                    await self.respond(situation=self.SILENCE_NOTE, cooldown_range=(6,14))
             except Exception:
                 LOG.exception(f"{self.id}: silence monitor error")
                                        
@@ -370,7 +323,7 @@ class Client:
         """
         try:
             # Human-ish latency.
-            await asyncio.sleep(random.uniform(1.0, 3.0))
+            await asyncio.sleep(self.rng.uniform(*self.cfg.timing.think_s))
 
             # check to see if cooldown period greater than last spoke at and keep quiet if so
             if time.monotonic() - self.last_spoke_at < self.cooldown_seconds:
@@ -381,7 +334,7 @@ class Client:
             LOG.info(f"{self.id} speak decision: {decision}")
 
             if decision and decision.speak:
-                await self.respond()
+                await self.respond(cooldown_range=self.cfg.timing.cooldown_after_reply_s)
 
         except asyncio.CancelledError:
             LOG.info(f"{self.id} reconsidering because a newer message arrived")
@@ -390,31 +343,11 @@ class Client:
         
 
     async def decide_whether_to_speak(self, sender: str, text: str) -> dict | None:
-        decision_prompt = f"""
-        Decide whether Participant {self.id} should speak next.
-
-        Last speaker: {sender}
-        Last message: {text}
-        {self._typing_note()}
+        prompt = self.task.render("decide", participant=self.id,
+                                  last_sender=sender, last_message=text,
+                                  typing_note=self._typing_note())
         
-        You are simulating a natural human chatroom participant.
-
-        Speak only if one of these is true:
-        - You were directly asked a question.
-        - You have new useful information about your image.
-        - You need to clarify a possible difference.
-        - The group seems stuck or confused.
-
-        Do NOT speak if:
-        - You would only agree.
-        - You would repeat something you already said.
-        - The latest message is better answered by someone else.
-        - You recently spoke and should let others talk.
-
-        """
-
-        return await self._ask(self.decider, decision_prompt)
-        
+        return await self._ask(self.decider, prompt)
 
 
     async def respond(self, situation: str = "", cooldown_range=(2,8)):
@@ -438,7 +371,9 @@ class Client:
                 return
 
         # construct turn taking prompt    
-        prompt = "\n".join(p for p in (situation, self._typing_note(), self.TURN_PROMPT) if p)
+        prompt = self.task.render("turn", situation=situation, typing_note=self._typing_note(),
+                                  max_words=self.cfg.turn.max_words)
+        
 
         resp = await self._ask(self.actor, prompt)
 
