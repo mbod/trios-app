@@ -1,0 +1,29 @@
+provider_defaults:
+  google_genai:
+    structured_output: json_schema
+  ollama:
+    params:
+      num_ctx: 16384
+
+profiles:
+  gpt-6-luna-low-effort:
+    provider: openai
+    model: gpt-6-luna
+    params:
+      reasoning_effort: low
+
+  gpt-6-luna-high-effort:
+    provider: openai
+    model: gpt-6-luna
+    params:
+      reasoning_effort: high
+
+  claude-haiku-5-5:
+    provider: anthropic
+    model: claude-haiku-5-5
+    
+
+  llama-openai-api:
+    provider: openai_compatible
+    model: llama3.1:latest
+    base_url: http://localhost:11434/v1

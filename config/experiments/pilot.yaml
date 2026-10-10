@@ -1,0 +1,30 @@
+
+name: pilot
+task: common_lines
+seed: 42
+
+
+agent_defaults:
+   model: openai:gpt-6-luna
+   timing:
+      think_s: [1.0, 3.0]
+      cooldown_after_reply_s: [2, 8]
+      cooldown_after_silence_s: [6, 14]
+   silence:
+      threshold_s: 0.6
+      check_every_s: [4, 8]
+      probability: 0.25
+   turn:
+      mode: decide_then_act
+      interrupt: cancel
+
+agents:
+  A:
+    model: gpt-6-luna-low-effort
+    silence:
+      probability: 0.45
+
+  B:
+    model: anthropic:claude-haiku-5-5
+  C:
+    model: google_genai:gemini-3.5-flash-lite

@@ -77,12 +77,16 @@ XYZ
       let typingTimer = null;
       let isTyping = false;
 
+      let lastSeq=0;
+      let composeSeq=null;
+
       function startTyping() {
 	  if (!isTyping) {
 	      isTyping = true;
 	      socketio.emit('typing', {
 		  from: from, state: 'start'
 	      });
+	      if (composeSeq === null) composeSeq = lastSeq;
 	  }
 	  clearTimeout(typingTimer);
 	  typingTimer = setTimeout(stopTyping, TYPING_IDLE_MS);
@@ -164,12 +168,16 @@ XYZ
     /* TASK COMPLETE message */
     socketio.on("task_complete", function(message) {
 	console.log('WS: task_complete ' + message.from + ' ' + message.message) ;
-	 taskComplete(message.from);
+	if (typeof message.seq === "number") lastSeq = Math.max(lastSeq, message.seq);
+	taskComplete(message.from);
     });
 
 
       
       socketio.on("message", function (message) {
+
+	  if (typeof message.seq === "number") lastSeq = Math.max(lastSeq, message.seq);
+	  
 	  typers.delete(message.from);
 	  renderTypers();
 	  console.log('WS: "message" ' + message.from + ' ' + message.message);
@@ -221,7 +229,9 @@ XYZ
             
 	console.log(`User ${from} message: ${msg}`);
 
-	socketio.emit("message", { message: msg, from: from });
+       socketio.emit("message", { message: msg, from: from,
+				  context_seq: composeSeq ?? lastSeq });
+       composeSeq = null;
       msgInput.value = "";
     }
 
