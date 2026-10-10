@@ -19,12 +19,14 @@ import requests
 
 
 
-from config import load_experiment, load_models, snapshot
+from config import load_experiment, snapshot
 
 _ = load_dotenv()
 
 ROOM_PATTERN = re.compile(r"^[A-z0-9_-]{1,32}$")
+TRIAL_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
+TRIAL_META_FIELDS = ("session_id", "task", "imagepath", "condition", "notes")
 
 PARTICIPANTS=['A','B','C']
 
@@ -157,6 +159,7 @@ def add_agent(agent_id, room_id):
         return auth_check
 
 
+
     imagepath = request.args.get('imagepath', 'image')
 
     
@@ -167,7 +170,8 @@ def add_agent(agent_id, room_id):
             json={"agent_id": agent_id,
                   "room_id": room_id,
                   "image_path": imagepath,
-                  "experiment": request.args.get("experiment")
+                  "experiment": request.args.get("experiment"),
+                  "model": request.args.get("model")
                   },
             timeout=3
         )

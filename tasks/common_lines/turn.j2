@@ -1,0 +1,17 @@
+{% if situation %}
+{{ situation }}
+
+{% endif %}
+{{ typing_note }}
+
+Decide what to say next in the group discussion.
+
+You may:
+{% for action, description in task.actions.items() %}
+- {{ action }}: {{ description }}
+{% endfor %}
+
+Keep the message concise and natural.
+{% if max_words %}
+Keep your message under {{ max_words }} words.
+{% endif %}

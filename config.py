@@ -42,11 +42,38 @@ class ModelSpec(BaseModel):
             raise ValueError("openai_compatible models need a base_url")
         return self
 
+class ModelsFile(Strict):
+    provider_defaults: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    profiles: dict[str, dict[str, Any]] = Field(default_factory=dict)
+
+class ModelRegistry:
+    """
+    Resolves a profile name or a 'provider:model' reference to a ModelSpec
+    """
+
+    def __init__(self, path: Path = CONFIG_DIR / "models.yaml"):
+        f = ModelsFile(**_read_yaml(path))
+        self.defaults = f.provider_defaults
+        self.profiles = {name: self._build(spec) for name, spec in f.profiles.items()}
+
+    def _build(self, spec: dict) -> ModelSpec:
+        base = self.defaults.get(spec.get("provider"), {})
+        return ModelSpec(**deep_merge(base, spec))
+
+    def resolve(self, ref: str) -> ModelSpec:
+        if ref in self.profiles:
+            return self.profiles[ref]
+
+        provider, sep, model = ref.partition(":")
+        if not sep or not model:
+            raise ValueError(f"unknown model '{ref}': use a provider name or 'provider:model'")
+        return self._build({"provider": provider, "model": model})
+    
 
 class TimingConfig(Strict):
     think_s: Range = (1.0, 3.0)          # pause before deciding
     cooldown_after_reply_s: Range = (2, 8)
-    cooldown_after_silence: Range = (6, 14)
+    cooldown_after_silence_s: Range = (6, 14)
     read_wpm: float = 250
     type_wpm: Range = (35, 50)
 
@@ -96,29 +123,26 @@ def deep_merge(base: dict, override: dict) -> dict:
     return out
 
 
-def _real_yaml(path: Path) -> dict:
-    return yaml.sage_load(path.read_text()) or {}
+def _read_yaml(path: Path) -> dict:
+    return yaml.safe_load(path.read_text()) or {}
 
 
-def load_models(path: Path = CONFIG_DIR / "models.yaml") -> dict[str, ModelSpec]:
-    return {name: ModelSpec(**spec) for name, spec in _real_yaml(path).items()}
 
-
-def load_experiment(name: str, models: dict[str, ModelSpec]) -> Experiment:
+def load_experiment(name: str, registry: ModelRegistry) -> Experiment:
 
     if not NAME_PATTERN.match(name):
         raise ValueError(f"invalid experiment name '{name}'")
 
     exp = Experiment(**_read_yaml(CONFIG_DIR / "experiments" / f"{name}.yaml"))
+    
     for agent_id in exp.agents:
-        cfg = exp.agent(agent_id)
-        if cfg.model not in models:
-            raise ValueError(f"{name}: agent {agent_id} uses unknown model '{cfg.model}'")
 
+        registry.resolve(exp.agent(agent_id).model)
+        
     return exp
 
 
-def snapshot(exp: Experiment, models: dict[str, ModelSpec]) -> dict:
+def snapshot(exp: Experiment, registry: ModelRegistry) -> dict:
     """
     The fully resolved configuration, for the trial log
     """
@@ -126,6 +150,7 @@ def snapshot(exp: Experiment, models: dict[str, ModelSpec]) -> dict:
     agents = {}
     for agent_id in exp.agents:
         cfg = exp.agent(agent_id)
-        agents[agent_id] = {**cfg.model_dump(), "model_spec": models[cfg.model].model_dump()}
+        agents[agent_id] = {**cfg.model_dump(),
+                            "model_spec": registry.resolve(cfg.model).model_dump()}
 
     return {"experiment": exp.name, "task": exp.task, "seed": exp.seed, "agents": agents}

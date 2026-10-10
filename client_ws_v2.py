@@ -307,7 +307,7 @@ class Client:
 
                 if self.rng.random() < silence.probability:
                     await self.respond(situation=self.task.render('silence'),
-                                       cooldown_range=self.cfg.timming.cooldown_after_silence_s)
+                                       cooldown_range=self.cfg.timing.cooldown_after_silence_s)
 
             except Exception:
                 LOG.exception(f"{self.id}: silence monitor error")

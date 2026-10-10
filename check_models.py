@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 _ = load_dotenv()
 
 
-from config import load_models
+from config import ModelRegistry
 from llm import build_chat_model, structured
 from schemas import SpeakDecision
 
@@ -23,11 +23,18 @@ async def check(name, spec):
     print()
 
 async def main():
-    for name, spec in load_models().items():
+
+    REFS = ["openai:gpt-5-nano", "anthropic:claude-haiku-5-5",
+            "google_genai:gemini-3.5-flash-lite",
+            "gpt-6-luna-low-effort"]
+
+    registry = ModelRegistry()
+    
+    for ref in REFS:
         try:
-            await check(name, spec)
+            await check(ref, registry.resolve(ref))
         except Exception as e:
-            print(f"{name:8} FAILED: {type(e).__name__}: {e}")
+            print(f"{ref:8} FAILED: {type(e).__name__}: {e}")
 
 asyncio.run(main())
 

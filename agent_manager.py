@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from config import load_experiment, load_models
+from config import load_experiment, ModelRegistry
 from tasks import Task
 
 from aiohttp import web
@@ -78,6 +78,7 @@ async def start_agent_handler(request):
     room_id = data.get("room_id", "")
     image_prefix = data.get("image_path") or "image"
 
+
     
     if not ID_PATTERN.match(agent_id) or not ID_PATTERN.match(room_id):
         return web.json_response(
@@ -102,14 +103,18 @@ async def start_agent_handler(request):
     exp_name = data.get("experiment") or DEFAULT_EXPERIMENT
 
     try:
-        models = load_models()
-        exp = load_experiment(exp_name, models)
+        registry = ModelRegistry()
+        exp = load_experiment(exp_name, registry)
         cfg = exp.agent(agent_id)
+
+        if data.get("model"):
+            cfg = cfg.model_copy(update={"model": data["model"]})
+        
         client = Client(
             id=agent_id, room=room_id, image_file=str(image_file),
             ws_url=BASE_WS_URL, socketio_path=SOCKETIO_PATH,
             task=Task(exp.task), cfg=cfg,
-            model_spec=models[cfg.model], seed=exp.seed
+            model_spec=registry.resolve(cfg.model), seed=exp.seed
         )
     except (FileNotFoundError, ValueError, ValidationError) as e:
         return web_json_response({

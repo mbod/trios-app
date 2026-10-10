@@ -24,7 +24,7 @@ class TaskDef(BaseModel):
     prompts: dict[str, str]
 
 
-    @model_validator
+    @model_validator(mode="after")
     def check_required(self):
         if missing := REQUIRED_ACTIONS - self.actions.keys():
             raise ValueError(f"task {self.name} is missing actions: {sorted(missing)}")

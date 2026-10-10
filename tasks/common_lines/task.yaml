@@ -1,0 +1,17 @@
+name: common_lines
+description: Find the two sequences of three items that are ordered the same in all three grids.
+participants: [A, B, C]
+
+actions:
+  say: describe a feature/item in your image
+  ask: ask another participant about a feature/item
+  suggest_difference: suggest a possible difference or similarity
+  summarize: summarize what the group has established
+  wait: wait silently if you have nothing useful to add
+  task_complete: indicate that you think the group has completed the task
+
+prompts:
+  system: system.j2
+  decide: decide.j2
+  turn: turn.j2
+  silence: silence.j2
