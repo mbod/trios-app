@@ -272,10 +272,13 @@ class Client:
             #})
 
 
-            @self.sio.on("trial_start")
-            async def on_trial_start(payload):
+            @self.sio.on("session_start")
+            async def on_session_start(payload):
                 self._trace_system_prompt()
-            
+
+            @self.sio.on("round_start")
+            async def on_round_start(payload):
+                self._trace_system_prompt()
             
         @self.sio.event
         async def disconnect():

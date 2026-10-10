@@ -24,9 +24,9 @@ from config import load_experiment, snapshot
 _ = load_dotenv()
 
 ROOM_PATTERN = re.compile(r"^[A-z0-9_-]{1,32}$")
-TRIAL_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
-TRIAL_META_FIELDS = ("session_id", "task", "imagepath", "condition", "notes")
+SESSION_META_FIELDS = ("session_id", "task", "imagepath", "condition", "notes")
 
 PARTICIPANTS=['A','B','C']
 
@@ -102,7 +102,7 @@ def require_user():
     return {'user': True}
 
 
-@app.route("/start_trial/<room_id>")
+@app.route("/start_session/<room_id>")
 def start_trial(room_id):
     auth_check = require_user()
     if not isinstance(auth_check, dict):
@@ -111,17 +111,17 @@ def start_trial(room_id):
     if not ROOM_PATTERN.match(room_id):
         return jsonify({"error": "invalid room id"}), 400
 
-    if event_log.active_trial(room_id):
+    if event_log.active_session(room_id):
         return jsonify({"error": f"room {room_id} already has an active trial",
-                        "active": event_log.active_trial(room_id)}), 409
+                        "active": event_log.active_session(room_id)}), 409
 
-    trial_id = request.args.get("trial_id") or f"{room_id}-{datetime.now():%Y%m%d-%H%M%S}"
-    if not TRIAL_PATTERN.match(trial_id):
-        return jsonify({"error": "invalid trial id"}), 400
-    if event_log.trial_exists(trial_id):
-        return jsonify({"error": f"trial {trial_id} already has a log file"}), 409
+    session_id = request.args.get("session_id") or f"{room_id}-{datetime.now():%Y%m%d-%H%M%S}"
+    if not ID_PATTERN.match(session_id):
+        return jsonify({"error": "invalid session id"}), 400
+    if event_log.session_exists(session_id):
+        return jsonify({"error": f"session {session_id} already has a log file"}), 409
 
-    meta = {k: request.args[k] for k in TRIAL_META_FIELDS if request.args.get(k)}
+    meta = {k: request.args[k] for k in SESSION_META_FIELDS if request.args.get(k)}
     meta["roster"] = [{"id": c["id"], "kind": c["kind"]}
                       for c in connected_clients.values() if c["room"] == room_id]
 
@@ -132,24 +132,52 @@ def start_trial(room_id):
     except requests.exceptions.ConnectionError:
         meta["agent_configs"] = {}
 
-    event = event_log.start_trial(room_id, trial_id, meta)
-    socketio.emit("trial_start", { "trial_id": trial_id, **meta}, to=room_id)
+    event = event_log.start_session(room_id, session_id, meta)
+    socketio.emit("session_start", { "session_id": session_id, **meta}, to=room_id)
 
     return jsonify(event)
 
 
-@app.route("/end_trial/<room_id>")
+@app.route("/end_session/<room_id>")
 def end_trial(room_id):
     auth_check = require_user()
     if not isinstance(auth_check, dict):
         return auth_check
 
-    if not event_log.active_trial(room_id):
-        return jsonify({"error": f"no active trial in room {room_id}"}), 404
+    if not event_log.active_session(room_id):
+        return jsonify({"error": f"no active session in room {room_id}"}), 404
 
-    event = event_log.end_trial(room_id)
-    socketio.emit("trial_end", {"trial_id": event["trial_id"]}, to=room_id)
+    event = event_log.end_session(room_id)
+    socketio.emit("session_end", {"session_id": event["session_id"]}, to=room_id)
     return jsonify(event)
+
+
+@app.route("/start_round/<room_id>/<int:round_no>")
+def start_round(room_id, round_no):
+    if not event_log.active_session(room_id):
+        return jsonify({"error": f"no active session in room {room_id}"}), 404
+
+    event_log.set_round(room_id, round_no)
+    event = event_log.record(room_id, "round_start", payload={"round": round_no})
+    socketio.emit("round_start", {"round": round_no, "seq": event["seq"]}, to=room_id)
+    return jsonify(event)
+
+
+@app.route("/end_round/<room_id>")
+def end_round(room_id):
+    session = event_log.active_session(room_id)
+    if not session or session["round"] is None:
+        return jsonify({"error": f"no active round in room {room_id}"}), 404
+
+    event = event_log.record(room_id, "round_end",
+                             payload={"round": session["round"],
+                                      "reason": "experimenter"})
+    event_log.set_round(room_id, None)
+    socketio.emit("round_end", {"round": event["round"],
+                                "reason": "experimenter"}, to=room_id)
+    return jsonify(event)
+
+
 
 #@app.route(f"{prefix.rstrip('/')}/add_agent/<agent_id>/to/<room_id>")
 @app.route("/add_agent/<agent_id>/to/<room_id>")
