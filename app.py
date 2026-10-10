@@ -157,7 +157,11 @@ def start_round(room_id, round_no):
     if not event_log.active_session(room_id):
         return jsonify({"error": f"no active session in room {room_id}"}), 404
 
-    event_log.set_round(room_id, round_no)
+    try:
+        event_log.set_round(room_id, round_no)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 409
+    
     event = event_log.record(room_id, "round_start", payload={"round": round_no})
     socketio.emit("round_start", {"round": round_no, "seq": event["seq"]}, to=room_id)
     return jsonify(event)

@@ -15,7 +15,7 @@ class EventLog:
         self._lock = threading.RLock()
         self._seq = {}                       # file key -> last sequence number
 
-        self._state_path = self.dir / "active_sessios.json"
+        self._state_path = self.dir / "active_sessions.json"
         self.active = {}                     # room -> {"session_id": ..., "round": ... }
         if self._state_path.exists():
             self.active = json.loads(self._state_path.read_text())
@@ -36,11 +36,24 @@ class EventLog:
 
     def set_round(self, room, round_no):
         with self._lock:
-            self.active[room]["round"] = round_no
+            session = self.active.get(room)
+            if session is None:
+                raise ValueError(f"no active session in room {room}")
+
+            if round_no is not None and session["round"] is not None:
+                raise ValueError(f"round {session['round']} is still active in room {room}")
+
+            session["round"] = round_no
             self._save_state()
         
     def end_session(self, room, payload=None):
         with self._lock:
+            session = self.active.get(room)
+            if session and session["round"] is not None:
+                self.record(room, "round_end",
+                            payload={"round": session["round"],
+                                     "reason": "session_end"})
+                session["round"]=None
             event = self.record(room, "session_end", payload=payload)
             self.active.pop(room, None)
             self._save_state()
