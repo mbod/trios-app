@@ -6,6 +6,7 @@ import time
 import json
 import socketio
 import logging
+import hashlib
 from pathlib import Path
 
 from config import AgentConfig, ModelSpec
@@ -114,7 +115,8 @@ class Client:
         self.last_heard_at = time.monotonic()
         self.cooldown_seconds = self.rng.uniform(*cfg.timing.cooldown_after_silence_s)
         self.speak_lock = asyncio.Lock()
-
+        self.last_seq = 0    # last server seq this agent has seen
+        self._trace_tasks = set()
 
         # Background tasks
         self.silence_task = None
@@ -144,36 +146,78 @@ class Client:
 
     # --- helper functions
 
-    async def _ask(self, runnable, instruction: str) -> dict | None:
-        """
-        Call a structured model (specific LLM)
-        Send chat history and instruction to the LLM;
-        return parsed object or None
-        """
-
+    async def _ask(self, runnable, stage: str, instruction: str):
+        """Call a structured model with retries; trace every attempt."""
+        retry = self.cfg.retry
+        base = {
+            "stage": stage,
+            "context_seq": self.last_seq,
+            "history_len": len(self.history),
+            "instruction": instruction,
+        }
         messages = [
             {"role": "system", "content": self.prompt},
             *self.history,
-            {"role": "user", "content": instruction}
+            {"role": "user", "content": instruction},
         ]
+        deadline = time.monotonic() + retry.budget_s
 
-        try:
-            result = await runnable.ainvoke(messages)
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            LOG.exception(f"{self.id}: LLM call failed -- {messages}")
-            return None
+        for attempt in range(1, retry.attempts + 1):
+            started = time.monotonic()
+            remaining = deadline - started
+            if remaining <= 0:
+                break
+            elapsed_ms = lambda: int((time.monotonic() - started) * 1000)
 
-        usage = getattr(result["raw"], "usage_metadata", None)
-        if result["parsing_error"]:
-            LOG.warning(f"{self.id}: unparseable output: {result['parsing_error']} | raw: {result['raw']}")
+            try:
+                async with asyncio.timeout(min(self.model_spec.timeout, remaining)):
+                    result = await runnable.ainvoke(messages)
+            except asyncio.CancelledError:
+                self._trace(**base, outcome="cancelled", attempt=attempt, latency_ms=elapsed_ms())
+                raise
+            except TimeoutError:
+                self._trace(**base, outcome="timeout", attempt=attempt, latency_ms=elapsed_ms())
+                continue
+            except Exception as e:
+                error = f"{type(e).__name__}: {e}"[:500]
+                self._trace(**base, outcome="llm_error", attempt=attempt,
+                            latency_ms=elapsed_ms(), error=error)
+                LOG.warning("%s: %s attempt %d failed: %s", self.id, stage, attempt, error)
+                if not self._retryable(e):
+                    return None
+                delay = retry.base_delay_s * 2 ** (attempt - 1) * self.rng.uniform(0.5, 1.5)
+                await asyncio.sleep(min(delay, max(0.0, deadline - time.monotonic())))
+                continue
 
-            return None
+            raw = result["raw"]
+            meta = getattr(raw, "response_metadata", None) or {}
+            details = {
+                "attempt": attempt,
+                "latency_ms": elapsed_ms(),
+                "usage": getattr(raw, "usage_metadata", None),
+                "model_reported": meta.get("model_name") or meta.get("model"),
+            }
+            if result["parsing_error"]:
+                self._trace(**base, **details, outcome="parse_error",
+                            error=str(result["parsing_error"])[:500],
+                            raw=str(getattr(raw, "content", ""))[:2000])
+                return None
 
-        LOG.info(f"{self.id}: {type(result['parsed']).__name__} tokens={usage}")
-        return result["parsed"]
-        
+            parsed = result["parsed"]
+            self._trace(**base, **details, outcome="ok", result=parsed.model_dump())
+            return parsed
+
+        return None
+
+    @staticmethod
+    def _retryable(e) -> bool:
+        """Retry rate limits, server errors and connection problems; not bad requests."""
+        status = getattr(e, "status_code", None) or getattr(e, "code", None)
+        if not isinstance(status, int):
+            return True
+        return status in (408, 409, 429) or status >= 500
+
+    
 
     def _typing_note(self) -> str:
         typing = sorted(self.others_typing)
@@ -181,6 +225,33 @@ class Client:
             return f"Currently typing: {', '.join(typing)}."
         return "Nobody else is typing."
 
+
+    def _trace(self, **payload):
+        """
+        Send a trace event without waiting for it.
+        Never blocks or raises
+        """
+
+        if not self.sio.connected:
+            return
+
+        task = asyncio.create_task(self._emit_trace(payload))
+        self._trace_tasks.add(task)
+
+        task.add_done_callback(self._trace_tasks.discard)
+
+    async def _emit_trace(self, payload):
+        try:
+            await self.sio.emit("agent_trace", payload)
+        except Exception:
+            LOG.debug(f"{self.id}: trace emit failed", exc_info=True)
+       
+
+    def _trace_system_prompt(self):
+        self._trace(stage="system_prompt", outcome="ok",
+                    prompt_sha256=hashlib(self.prompt.encode()).hexdigest(),
+                    prompt=self.prompt)
+            
     # ----------
 
         
@@ -200,6 +271,12 @@ class Client:
             #    "kind": "agent"
             #})
 
+
+            @self.sio.on("trial_start")
+            async def on_trial_start(payload):
+                self._trace_system_prompt()
+            
+            
         @self.sio.event
         async def disconnect():
             LOG.info(f"Agent {self.id} disconnected")
@@ -215,6 +292,10 @@ class Client:
             self.last_heard_at = time.monotonic()
             self.others_typing.discard(sender)
 
+            seq = payload.get("seq")
+            if isinstance(seq, int):
+                self.last_seq = max(self.last_seq, seq)
+            
             if sender == self.id:
                 return               # don't add echo to history
             
@@ -246,18 +327,26 @@ class Client:
         @self.sio.on("task_complete")
         async def on_task_complete(payload):
             sender = payload.get("from")
+
+            seq = payload.get("seq")
+            if isinstance(seq, int):
+                self.last_seq = max(self.last_seq, seq)
+
+            
             if sender and sender != self.id and not self.task_completed:
                 self.history.append({
                     "role": "user",
                      "content": f"[{sender} has signalled they think the task is complete]"
                 })
+
+            
             
 
 
     # --------- action functions
 
     
-    async def say(self, text: str, cooldown_range=(2, 8)):
+    async def say(self, text: str, cooldown_range, context_seq: int | None = None):
         """
         This is where an agent sends a chat message to chatroom
         """
@@ -275,9 +364,13 @@ class Client:
         self.last_spoke_at = time.monotonic()
         self.cooldown_seconds = self.rng.uniform(*cooldown_range)
 
-        await self.sio.emit("message",
-                            {"from": self.id, "room": self.room,
-                             "message": text })
+
+        message = {"from": self.id, "room": self.room, "message": text}
+        if context_seq is not None:
+            message["context_seq"] = context_seq
+        
+        await self.sio.emit("message", message)
+
         
 
 
@@ -328,6 +421,8 @@ class Client:
             # check to see if cooldown period greater than last spoke at and keep quiet if so
             if time.monotonic() - self.last_spoke_at < self.cooldown_seconds:
                 LOG.info(f"{self.id} staying quiet: cooldown")
+                self._trace(stage="gate", outcome="cooldown",
+                            context_seq = self.last_seq)
                 return
             
             decision = await self.decide_whether_to_speak(sender, text)
@@ -347,7 +442,7 @@ class Client:
                                   last_sender=sender, last_message=text,
                                   typing_note=self._typing_note())
         
-        return await self._ask(self.decider, prompt)
+        return await self._ask(self.decider, "decide", prompt)
 
 
     async def respond(self, situation: str = "", cooldown_range=(2,8)):
@@ -375,7 +470,11 @@ class Client:
                                   max_words=self.cfg.turn.max_words)
         
 
-        resp = await self._ask(self.actor, prompt)
+        stage = "silence_turn" if situation else "turn"
+        context_seq = self.last_seq
+        
+        
+        resp = await self._ask(self.actor, stage, prompt)
 
         if not resp:
             return
@@ -388,7 +487,7 @@ class Client:
         elif resp.current_action == "wait":
             LOG.info(f"{self.id} chose to wait")
         else:
-            await self.say(resp.message, cooldown_range)
+            await self.say(resp.message, cooldown_range, context_seq=context_seq)
             
 
     async def signal_complete(self):
@@ -409,7 +508,10 @@ class Client:
                                    auth=auth,
                                    transports=['websocket','polling'])
 
-            await self.say(self.INITIAL_GREETING)
+            await self.say(self.INITIAL_GREETING,
+                           self.cfg.timing.cooldown_after_reply_s,
+                           context_seq=self.last_seq
+                           )
             await self.sio.wait()
 
         except asyncio.CancelledError:

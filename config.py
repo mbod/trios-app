@@ -32,7 +32,7 @@ class ModelSpec(BaseModel):
     temperature: float | None = None     # None = provider default
     max_tokens: int | None = None
     timeout: float = 60
-    max_retries: int = 2
+    max_retries: int = 0
     structured_output: Literal["json_schema", "function_calling", "json_mode"] | None = None
     params: dict[str, Any] = Field(default_factory=dict)
 
@@ -91,13 +91,19 @@ class TurnConfig(Strict):
     max_words: int | None = None
 
 
+class RetryConfig(Strict):
+    attempts: int = Field(3, ge=1)
+    base_delay_s: float = 1.0
+    budget_s: float = 20.0
+    
+
 class AgentConfig(Strict):
     model: str
     perception: Literal["raw", "self_description", "oracle_description"] = "raw"
     timing: TimingConfig = Field(default_factory=TimingConfig)
     silence: SilenceConfig = Field(default_factory=SilenceConfig)
     turn: TurnConfig = Field(default_factory=TurnConfig)
-
+    retry: RetryConfig = Field(default_factory=RetryConfig)
 
 class Experiment(Strict):
     name: str

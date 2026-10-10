@@ -291,13 +291,21 @@ def handle_message(payload):
 
     if not text:
         return
+
+
+    logged = {'message': text}
+    context_seq = payload.get('context_seq')
+
+    if isinstance(context_seq, int):
+        logged['context_seq'] = context_seq
+
     
     # message
-    sender = payload['from']
+    sender = client['id'] or payload['from'] 
     event = event_log.record(client['room'], 'message',
                              sender=sender,
                              kind=client['kind'],
-                             payload={'message': text})
+                             payload=logged)
     
     
     emit('message', { 'from': sender, 'message': text,
@@ -359,6 +367,20 @@ def handle_end_task(payload):
                            'ts': event['ts']},
          to=client['room'])
                                                         
+
+# --- agent traces are ws events but NOT broadcast
+@socketio.on('agent_trace')
+def handle_agent_trace(payload):
+    client = connected_clients.get(request.sid)
+    if not client or client['kind'] != 'agent':
+        return
+
+    event_log.record(client['room'], 'agent_trace',
+                     sender=client['id'], kind='agent',
+                     payload=payload or {})
+
+    
+
     
 if __name__ == "__main__":
 
