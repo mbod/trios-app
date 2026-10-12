@@ -109,6 +109,16 @@ docs/_build/
 .pybuilder/
 target/
 
+__pycache__/
+*.pyc
+.venv/
+.env
+logs/
+\#*\#
+.\#*
+*~
+
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
