@@ -1,4 +1,4 @@
-
+# agent.py
 
 import asyncio
 import random
@@ -12,7 +12,7 @@ from pathlib import Path
 from config import AgentConfig, ModelSpec
 from tasks import Task
 from llm import build_chat_model, structured
-from schemas import SpeakDecision
+
 
 
 from dotenv import load_dotenv
@@ -57,6 +57,15 @@ AGENT_MODELS = {
     "C" : "gemini"
 }
 """
+
+class SpeakDecision(BaseModel):
+    """
+    Whether to speak next in the group chat
+    """
+    speak: bool = Field(description="true if you should send a message now")
+    reason: str = Field(description="brief reason for the decision")
+
+
 
 
 class Client:

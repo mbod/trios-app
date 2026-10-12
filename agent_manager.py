@@ -14,7 +14,7 @@ from tasks import Task
 from aiohttp import web
 from dotenv import load_dotenv
 
-from client_ws_v2 import Client
+from agent import Client
 
 _ = load_dotenv()
 

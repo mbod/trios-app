@@ -7,7 +7,7 @@ _ = load_dotenv()
 
 from config import ModelRegistry
 from llm import build_chat_model, structured
-from schemas import SpeakDecision
+from agent import SpeakDecision
 
 
 async def check(name, spec):
