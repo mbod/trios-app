@@ -1,48 +1,48 @@
 
-
+import os
 from langchain.chat_models import init_chat_model
 
-from config import ModelSpec
-import os
+from config import AgentSettings
 
-# map provider names to LangChain names
-PROVIDERS = {
-    "openai": "openai",
-    "anthropic": "anthropic",
-    "google_genai": "google_genai",
-    "ollama": "ollama",
-    "openai_compatible": "openai"
+
+PROVIDER_DEFAULTS = {
+    "ollama": {
+        "num_ctx": 16384         # extend Ollama default context
+    }
+}
+
+STRUCTURED_METHOD = {            
+    "google_genai": "json_schema"  # native structured output for Google models
 }
 
 
-def build_chat_model(spec: ModelSpec):
-    kwargs = {}
-    if spec.provider != "ollama":
-        kwargs.update(timeout=spec.timeout, max_retries=spec.max_retries)
+
+def build_chat_model(settings: AgentSettings):
+
+    provider, _, name = settings.model.partition(":")
+    kwargs = dict(PROVIDER_DEFAULTS.get(provider, {}))
+    
+    if provider != "ollama":
+        kwargs["max_retries"] = 0
         
-    if spec.temperature is not None:
-        kwargs["temperature"] = spec.temperature
+    if settings.temperature is not None:
+        kwargs["temperature"] = settings.temperature
 
-    if spec.max_tokens is not None:
-        kwargs["max_tokens"] = spec.max_tokens
+    if settings.base_url:
+        kwargs["base_url"] = settings.base_url
+        if provider == "openai":               # e.g. vLLM openai compatible provider
+            kwargs["api_key"] = os.environ.get("OPENAI_COMPATIBLE_KEY", "not-needed")
 
-    if spec.provider == "openai_compatible":
-        kwargs["base_url"] = spec.base_url
-        kwargs["api_key"] = os.environ[spec.api_key_env] if spec.api_key_env else "not-needed"
-    elif spec.provider == "ollama" and spec.base_url:
-        kwargs["base_url"] = spec.base_url
+    kwargs.update(settings.model_settings)
 
-    kwargs.update(spec.params)
-    return init_chat_model(spec.model, model_provider=PROVIDERS[spec.provider], **kwargs)
+    
+    return init_chat_model(name, model_provider=provider, **kwargs)
 
 
-def structured(chat_model, schema, spec: ModelSpec):
-    """
-    Wrap a model so it returns a validated instance of the `schema` (in schemas.py)
-    """
+def structured(chat_model, schema, provider: str):
     kwargs = {"include_raw": True}
-    if spec.structured_output:
-        kwargs["method"] = spec.structured_output
+    if provider in STRUCTURED_METHOD:
+        kwargs["method"] = STRUCTURED_METHOD[provider]
 
     return chat_model.with_structured_output(schema, **kwargs)
 

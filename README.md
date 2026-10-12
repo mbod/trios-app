@@ -81,3 +81,24 @@ The app implements a web-based chatroom to facilitate communication between trio
 
 - persistent log of chat
 
+
+
+----
+
+## Configuration
+
+### Models
+
+Testing with a range of openai models initially
+TODO: generalize async handler to work with any LLM
+
+OpenAI model ids for testing
+
+- gpt-4o-2024-11-20
+- gpt-5-nano
+- gpt-4o-mini
+- gpt-4.1-nano
+- gpt-5.6-luna
+- gpt-5.4-nano
+
+- claude-haiku-4-5-20251001

@@ -1,0 +1,13 @@
+description: Pilot with three different models
+seed: 42
+
+participants:
+  A:
+    model: openai:gpt-6-luna
+    model_settings:
+       reasoning_effort: low
+    silence_chance: 0.45
+  B:
+    model: anthropic:claude-haiku-5-5
+  C:
+    model: google_genai:gemini-3.5-flash-lite

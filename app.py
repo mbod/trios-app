@@ -17,13 +17,9 @@ from datetime import datetime
 import logging
 import requests
 
-
-
-from config import load_experiment, snapshot
-
 _ = load_dotenv()
 
-ROOM_PATTERN = re.compile(r"^[A-z0-9_-]{1,32}$")
+ROOM_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 SESSION_META_FIELDS = ("session_id", "task", "imagepath", "condition", "notes")
@@ -36,7 +32,7 @@ AGENT_TOKEN = os.environ['AGENT_TOKEN']
 event_log = EventLog(os.environ.get('LOG_DIR', 'logs'))
 
 logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s [%(levelname)s] %(message)s")
+                    format="[AppServer]%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -202,7 +198,8 @@ def add_agent(agent_id, room_id):
             json={"agent_id": agent_id,
                   "room_id": room_id,
                   "image_path": imagepath,
-                  "experiment": request.args.get("experiment"),
+                  "condition": request.args.get("condition"),
+                  "task": request.args.get("task"),
                   "model": request.args.get("model")
                   },
             timeout=3
@@ -420,4 +417,4 @@ if __name__ == "__main__":
     # NOTE for deployment
     # turn logging off socketio = SocketIO(app)
     
-    socketio.run(app, port=5555, debug=True)
+    socketio.run(app, port=5555, debug=True, use_reloader=False)

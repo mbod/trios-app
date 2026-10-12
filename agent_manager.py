@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from config import load_experiment, ModelRegistry
+from config import AgentSettings, load_condition
 from tasks import Task
 
 from aiohttp import web
@@ -19,7 +19,8 @@ from agent import Client
 _ = load_dotenv()
 
 
-DEFAULT_EXPERIMENT = os.environ.get("EXPERIMENT", "pilot")
+DEFAULT_CONDITION = os.environ.get("CONDITION", "pilot")
+DEFAULT_TASK = os.environ.get("TASK", "common_lines")
 
 AGENT_TOKEN = os.environ['AGENT_TOKEN']
 
@@ -44,7 +45,7 @@ def resolve_image(image_prefix: str, agent_id: str) -> Path | None:
 
     return None
 
-# Registry: (room_id, agent_id) -> {"task": asyncio.Task, "client": Client}
+# Registry: (room_id, agent_id) -> {"job": asyncio.Task, "client": Client}
 RUNNING_AGENTS = {}
 
 BASE_WS_URL = "http://127.0.0.1:5555"
@@ -52,18 +53,18 @@ BASE_WS_URL = "http://127.0.0.1:5555"
 SOCKETIO_PATH = "/socket.io"
 
 
-def _on_agent_done(key, task):
+def _on_agent_done(key, job):
     """
     Runs when an agent ends a task for any reason to clean up
     """
     info = RUNNING_AGENTS.get(key)
-    if info and info["task"] is task:
+    if info and info["job"] is job:
         RUNNING_AGENTS.pop(key)
 
-    if task.cancelled():
+    if job.cancelled():
         LOG.info(f"Agent {key} stopped (canncelled)")
-    elif task.exception():
-        LOG.error(f"Agent {key} crashed!", exc_info=task.exception())
+    elif job.exception():
+        LOG.error(f"Agent {key} crashed!", exc_info=job.exception())
     else:
         LOG.info(f"Agent {key} finished")
         
@@ -100,46 +101,69 @@ async def start_agent_handler(request):
         })
 
 
-    exp_name = data.get("experiment") or DEFAULT_EXPERIMENT
 
     try:
-        registry = ModelRegistry()
-        exp = load_experiment(exp_name, registry)
-        cfg = exp.agent(agent_id)
+        cond = load_condition(data.get("condition") or DEFAULT_CONDITION)
+        settings = cond.agent(agent_id)
 
         if data.get("model"):
-            cfg = cfg.model_copy(update={"model": data["model"]})
+            settings = AgentSettings(**{**settings.model_dump(),
+                                        "model": data["model"]})
+
+        task = Task(data.get("task") or DEFAULT_TASK)
         
         client = Client(
             id=agent_id, room=room_id, image_file=str(image_file),
             ws_url=BASE_WS_URL, socketio_path=SOCKETIO_PATH,
-            task=Task(exp.task), cfg=cfg,
-            model_spec=registry.resolve(cfg.model), seed=exp.seed
+            task=task, settings=settings, seed=cond.seed
         )
     except (FileNotFoundError, ValueError, ValidationError) as e:
-        return web_json_response({
+        return web.json_response({
             "error": f"config: {e}"}, status=400)
     
     auth = {
         "room": room_id,
-        "sid": agent_id,
+        "agent_id": agent_id,
         "token": AGENT_TOKEN
     }
 
     # Spawn directly in the existing asyncio event loop
-    task = asyncio.create_task(client.run(auth),
+    job = asyncio.create_task(client.run(auth),
                                name=f"agent-{room_id}-{agent_id}")
-    RUNNING_AGENTS[key] = {"task": task, "client": client}
+    RUNNING_AGENTS[key] = {"job": job, "client": client,
+                           "condition": cond.name, 
+                           "seed": cond.seed
+                           }
 
-    task.add_done_callback(lambda t: _on_agent_done(key, t))
+    job.add_done_callback(lambda t: _on_agent_done(key, t))
     
-    LOG.info(f"Spawned agent task for Agent {agent_id} in Room {room_id} with IMAGE {image_file.name}")
+    LOG.info(f"Started agent {agent_id} in Room {room_id} with IMAGE {image_file.name}")
     
     return web.json_response({
         "status": "started",
         "agent_id": agent_id,
         "room_id": room_id
     })
+
+
+async def config_handler(request):
+    """
+    Settings for every agent running in a room, for the session log
+    """
+    room_id = request.query.get("room_id")
+    agents = {}
+    for (room, agent_id), info in RUNNING_AGENTS.items():
+        if room == room_id:
+            client = info["client"]
+            agents[agent_id] = {
+                "condition": info["condition"],
+                "seed": info["seed"],
+                "task": client.task.defn.name,
+                "settings": client.settings.model_dump()
+            }
+
+    return web.json_response({"agents": agents})
+                
 
 
 async def stop_agent_handler(request):
@@ -153,10 +177,10 @@ async def stop_agent_handler(request):
             {"error": "Agent not found or already stopped"},
             status=404)
     
-    task = info["task"]
-    task.cancel()
+    job = info["job"]
+    job.cancel()
 
-    await asyncio.wait({task}, timeout=5)
+    await asyncio.wait({job}, timeout=5)
 
     return web.json_response(
         {"status": "stopped",
@@ -167,16 +191,16 @@ async def stop_agent_handler(request):
 async def list_agents_handler(request):
     """Returns all currently active agents."""
     active = [
-        {"room_id": r, "agent_id": a, "done": info["task"].done()}
+        {"room_id": r, "agent_id": a, "done": info["job"].done()}
         for (r, a), info in RUNNING_AGENTS.items()
     ]
     return web.json_response({"active_agents": active})
 
 
 async def on_shutdown(app):
-    tasks = [info["task"] for info in RUNNING_AGENTS.values()]
-    for task in tasks:
-        task.cancel()
+    jobs = [info["job"] for info in RUNNING_AGENTS.values()]
+    for job in jobs:
+        job.cancel()
     await asyncio.gather(*tasks, return_exceptions=True)
 
 
@@ -185,6 +209,7 @@ def create_app():
     app.router.add_post("/start", start_agent_handler)
     app.router.add_post("/stop", stop_agent_handler)
     app.router.add_get("/list", list_agents_handler)
+    app.router.add_get("/config", config_handler)
     app.on_shutdown.append(on_shutdown)
     return app
 
@@ -192,4 +217,13 @@ def create_app():
 if __name__ == "__main__":
     app = create_app()
     LOG.info("Starting Agent Manager service on http://127.0.0.1:5556...")
+
+    def log_unhandled(loop, context):
+        LOG.error("Unhandled error in background task: %s",
+                  context.get("message"), exc_info=context.get("exception"))
+
+    async def install_handler(app):
+        asyncio.get_running_loop().set_exception_handler(log_unhandled)
+
+    
     web.run_app(app, host="127.0.0.1", port=5556)

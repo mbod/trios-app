@@ -1,0 +1,10 @@
+description: One human and two Claude agents
+seed: 42
+
+participants:
+   A:
+      model: anthropic:claude-haiku-5-5
+   B:
+      model: anthropic:claude-haiku-5-5
+   C:
+      human

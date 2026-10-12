@@ -42,7 +42,7 @@ def make_turn_action(actions: dict[str,str]):
         __doc__="What to do on this turn",
         current_action=(Literal[tuple(actions)], Field(description="the action to take")),
         message=(str, Field(default="", description=(
-            "the that message to send, or empty string if waiting or task_complete"))),
+            "the chat message to send, or empty string if waiting or task_complete"))),
     )
 
 

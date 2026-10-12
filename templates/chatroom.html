@@ -22,7 +22,7 @@
   </div>
 
   <div id="typing-indicator" aria-live="polite">
-XYZ
+
   </div>
 
   </div>
@@ -66,8 +66,16 @@ XYZ
 </div>
 
     <script type="text/javascript">
-      const socketio = io({ auth: { room: '{{room}}' }});
+      const socketio = io({
+	  auth: {
+	      room: {{ room|tojson }},
+	      user_id: {{ (participants[0] if participants|length==1 else none)|tojson }}
+	  }
+      });
+      let lastSeq=0;
+      console.log(socketio);
 
+      
       {% if participants|length==1 %}
       const from = '{{participants[0]}}';
       const textarea = document.getElementById('message-input');
@@ -77,7 +85,7 @@ XYZ
       let typingTimer = null;
       let isTyping = false;
 
-      let lastSeq=0;
+
       let composeSeq=null;
 
       function startTyping() {
@@ -125,8 +133,6 @@ XYZ
       {% endif %}
 
 
-    console.log(socketio);
-
 
       /* TYPING indicator */
       const typers = new Set();
@@ -167,7 +173,7 @@ XYZ
 
     /* TASK COMPLETE message */
     socketio.on("task_complete", function(message) {
-	console.log('WS: task_complete ' + message.from + ' ' + message.message) ;
+	console.log('WS: task_complete ' + message.from) ;
 	if (typeof message.seq === "number") lastSeq = Math.max(lastSeq, message.seq);
 	taskComplete(message.from);
     });
@@ -189,7 +195,9 @@ XYZ
     function taskComplete(senderID) {
 	console.log('taskComplete: participant '+ senderID);
 	const complete_status = document.getElementById('complete-'+senderID);
-	complete_status.checked = true;
+	if (complete_status) {
+	    complete_status.checked = true;
+	}
     }
       
         
@@ -200,17 +208,16 @@ XYZ
     
 
       console.log(`${sender}: ${message}`);
-
-     
         
-      const messages = document.getElementById("messages");
+	const messages = document.getElementById("messages");
+	const p = document.createElement("p");
+	p.className = `message from${sender}`;
+	p.textContent = `${sender}: ${message}`;
 
-      content = `<p class="message from${sender}">${sender}: ${message}</p>`;
-        
-      messages.innerHTML += content;
+        messages.appendChild(p);
 
-      // Keep inbox scrolled to bottom
-      messages.scrollTop = messages.scrollHeight;        
+	// Keep inbox scrolled to bottom
+	messages.scrollTop = messages.scrollHeight;        
     }
 
 
