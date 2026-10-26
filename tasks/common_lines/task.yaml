@@ -15,3 +15,29 @@ prompts:
   decide: decide.j2
   turn: turn.j2
   silence: silence.j2
+
+
+materials: svg
+
+answer:
+  choose: 2
+  options:
+     row1: Top row (1 2 3)
+     row2: Middle row (4 5 6)
+     row3: Bottom row (7 8 9)
+     col1: Left column (1 4 7)
+     col2: Middle column (2 5 8)
+     col3: Right column (3 6 9)
+     diag_tlbr: Diagonal (1 5 9)
+     diag_bltr: Diagonal (3 5 7)
+
+rules:
+   order: shuffled
+   rounds: 6
+   pause_between_rounds: 10
+   clear_chat_between_rounds: false
+   time_limit: 600
+   message_limit: null
+   warning_before_end: 60
+   require_answer: true
+   require_agreement: false

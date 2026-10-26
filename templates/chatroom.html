@@ -30,8 +30,13 @@
   <div id="stimuli">
     {% for part in participants %}
     <div class="from{{part}} stimImage">
-      
-        <img src="{{url_for('static', filename='images/'+imagepath+part+'.svg')}}"/>
+
+
+      <!--
+          <img src="{{url_for('static', filename='images/'+imagepath+part+'.svg')}}"/>
+	  -->
+	  <img src="/stimuli/common_lines/animal_tangrams/{{imagepath}}/{{part}}.svg"/>
+	  
         </div>
     {% endfor %}
 

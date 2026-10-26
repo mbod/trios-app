@@ -8,14 +8,22 @@
 
 import os
 import re
+import hmac
 from dotenv import load_dotenv
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from event_log import EventLog
 
-from flask import Flask, request, render_template, session, jsonify
+from flask import Flask, request, render_template, session, jsonify, abort, send_from_directory
 from datetime import datetime
 import logging
 import requests
+
+from pathlib import Path
+from pydantic import ValidationError
+
+from config import NAME_PATTERN
+from tasks import TASK_DIR
+from session import SESSIONS, Session
 
 _ = load_dotenv()
 
@@ -26,10 +34,19 @@ SESSION_META_FIELDS = ("session_id", "task", "imagepath", "condition", "notes")
 
 PARTICIPANTS=['A','B','C']
 
+STIMULUS_FILE_TYES = {".svg", ".png", ".jpg", ".txt"}
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
+
+ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN')
 AGENT_TOKEN = os.environ['AGENT_TOKEN']
+
+
 event_log = EventLog(os.environ.get('LOG_DIR', 'logs'))
+
+for room in list(event_log.active):
+    event_log.end_session(room, payload={"reason": "server_restart"})
 
 logging.basicConfig(level=logging.INFO,
                     format="[AppServer]%(asctime)s [%(levelname)s] %(message)s")
@@ -56,6 +73,15 @@ connected_clients = {}
 
 AGENT_MANAGER_URL = "http://127.0.0.1:5556"
 
+
+def require_admin():
+    """
+    Request most carry the admin token
+    """
+    token = request.args.get("token") or request.headers.get("X-Admin-Token","")
+    if not ADMIN_TOKEN or not hmac.compare_digest(token, ADMIN_TOKEN):
+        return jsonify({"error": "admin token required"}), 403
+    return None
 
 
 # --- app routes --------------------------------------------------
@@ -94,95 +120,75 @@ def create_room():
 
 
 
-def require_user():
-    return {'user': True}
-
 
 @app.route("/start_session/<room_id>")
-def start_trial(room_id):
-    auth_check = require_user()
-    if not isinstance(auth_check, dict):
-        return auth_check
-
+def start_session(room_id):
+    if (denied := require_admin()):
+        return denied
+    args = request.args
     if not ROOM_PATTERN.match(room_id):
         return jsonify({"error": "invalid room id"}), 400
+    if room_id in SESSIONS or event_log.active_session(room_id):
+        return jsonify({"error": f"a session is already running in room {room_id}"}), 409
 
-    if event_log.active_session(room_id):
-        return jsonify({"error": f"room {room_id} already has an active trial",
-                        "active": event_log.active_session(room_id)}), 409
-
-    session_id = request.args.get("session_id") or f"{room_id}-{datetime.now():%Y%m%d-%H%M%S}"
+    session_id = args.get("session_id") or f"{room_id}-{datetime.now():%Y%m%d-%H%M%S}"
     if not ID_PATTERN.match(session_id):
         return jsonify({"error": "invalid session id"}), 400
     if event_log.session_exists(session_id):
         return jsonify({"error": f"session {session_id} already has a log file"}), 409
 
-    meta = {k: request.args[k] for k in SESSION_META_FIELDS if request.args.get(k)}
-    meta["roster"] = [{"id": c["id"], "kind": c["kind"]}
-                      for c in connected_clients.values() if c["room"] == room_id]
-
     try:
-        r = requests.get(f"{AGENT_MANAGER_URL}/config",
-                         params={"room_id": room_id}, timeout=3)
-        meta["agent_configs"] = r.json().get("agents", {})
-    except requests.exceptions.ConnectionError:
-        meta["agent_configs"] = {}
+        overrides = {}
+        if "rounds" in args:
+            overrides["rounds"] = int(args["rounds"])
+        if "time_limit" in args:
+            overrides["time_limit"] = None if args["time_limit"] == "none" else float(args["time_limit"])
+        meta = {k: args[k] for k in ("group_id", "notes") if args.get(k)}
+        session = Session(socketio, event_log, connected_clients, room_id, session_id,
+                          args.get("condition", ""), args.get("task", ""),
+                          args.get("stimuli", ""), overrides, meta)
+    except (ValueError, ValidationError, FileNotFoundError) as e:
+        return jsonify({"error": str(e)}), 400
 
-    event = event_log.start_session(room_id, session_id, meta)
-    socketio.emit("session_start", { "session_id": session_id, **meta}, to=room_id)
+    if (missing := session.missing_humans()):
+        return jsonify({"error": f"waiting for human participants: {missing}"}), 409
 
-    return jsonify(event)
+    SESSIONS[room_id] = session
+    session.start()
+    return jsonify({"session_id": session_id, "round_order": session.order})
 
-
-@app.route("/end_session/<room_id>")
-def end_trial(room_id):
-    auth_check = require_user()
-    if not isinstance(auth_check, dict):
-        return auth_check
-
-    if not event_log.active_session(room_id):
-        return jsonify({"error": f"no active session in room {room_id}"}), 404
-
-    event = event_log.end_session(room_id)
-    socketio.emit("session_end", {"session_id": event["session_id"]}, to=room_id)
-    return jsonify(event)
-
-
-@app.route("/start_round/<room_id>/<int:round_no>")
-def start_round(room_id, round_no):
-    if not event_log.active_session(room_id):
-        return jsonify({"error": f"no active session in room {room_id}"}), 404
-
-    try:
-        event_log.set_round(room_id, round_no)
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 409
-    
-    event = event_log.record(room_id, "round_start", payload={"round": round_no})
-    socketio.emit("round_start", {"round": round_no, "seq": event["seq"]}, to=room_id)
-    return jsonify(event)
 
 
 @app.route("/end_round/<room_id>")
 def end_round(room_id):
-    session = event_log.active_session(room_id)
-    if not session or session["round"] is None:
-        return jsonify({"error": f"no active round in room {room_id}"}), 404
+    if (denied := require_admin()):
+        return denied
+    if not (session := SESSIONS.get(room_id)):
+        return jsonify({"error": f"no session running in room {room_id}"}), 404
+    session.request_end_round()
+    return jsonify({"status": "ending round"})
 
-    event = event_log.record(room_id, "round_end",
-                             payload={"round": session["round"],
-                                      "reason": "experimenter"})
-    event_log.set_round(room_id, None)
-    socketio.emit("round_end", {"round": event["round"],
-                                "reason": "experimenter"}, to=room_id)
-    return jsonify(event)
+
+@app.route("/end_session/<room_id>")
+def end_session(room_id):
+    if (denied := require_admin()):
+        return denied
+    if not (session := SESSIONS.get(room_id)):
+        return jsonify({"error": f"no session running in room {room_id}"}), 404
+    session.request_end_session()
+    return jsonify({"status": "ending session"})
+
+
+
 
 
 
 #@app.route(f"{prefix.rstrip('/')}/add_agent/<agent_id>/to/<room_id>")
 @app.route("/add_agent/<agent_id>/to/<room_id>")
 def add_agent(agent_id, room_id):
-    auth_check = require_user()
+    if (denied := require_admin()):
+        return denied    
+
     if not isinstance(auth_check, dict):
         return auth_check
 
@@ -212,7 +218,10 @@ def add_agent(agent_id, room_id):
 #@app.route(f"{prefix.rstrip('/')}/stop_agent/<agent_id>/from/<room_id>")
 @app.route("/stop_agent/<agent_id>/from/<room_id>")
 def stop_agent(agent_id, room_id):
-    auth_check = require_user()
+
+    if (denied := require_admin()):
+        return denied
+    
     if not isinstance(auth_check, dict):
         return auth_check
 
@@ -242,6 +251,17 @@ def list_agents():
         return jsonify({"error": "Agent manager service is not running on port 5556"}), 503
         
 
+# serve stimuli
+@app.route('/stimuli/<task>/<stim_set>/<round_id>/<filename>')
+def stimulus_file(task, stim_set, round_id, filename):
+    if not all(NAME_PATTERN.match(part) for part in (task, stim_set, round_id)):
+        abort(404)
+
+    if Path(filename).suffix.lower() not in STIMULUS_FILE_TYES:
+        abort(404)
+
+    return send_from_directory(TASK_DIR / task / "stimuli" / stim_set / round_id, filename)
+    
 
 # ----- SOCKETIO handlers -----------------------------------------
 
@@ -279,7 +299,7 @@ def handle_connect(auth):
         logger.warning(f"Rejected sid={sid}: invalid room {room}")
         return False
 
-    connected_clients[sid] = identity
+
     
     logger.info(f'Connected clients: {connected_clients}')
 
@@ -290,7 +310,7 @@ def handle_connect(auth):
                      sender=identity['id'],
                      kind=identity['kind'])
                      
-
+    connected_clients[sid] = identity
 
 @socketio.on('disconnect')
 def handle_disconnect(reason=None):
@@ -336,6 +356,9 @@ def handle_message(payload):
                              kind=client['kind'],
                              payload=logged)
     
+
+    if (session := SESSIONS.get(client['room'])):
+        session.on_message()
     
     emit('message', { 'from': sender, 'message': text,
                       'seq': event['seq'], 'ts': event['ts']},
@@ -375,27 +398,16 @@ def handle_begin_task(payload):
     
 @socketio.on('task_complete')
 def handle_end_task(payload):
-    '''Handle participant signal that they think task is complete'''
-
-    logger.info(f'TASK COMPLETE: {payload} - request_id: {request.sid}')
-
-    client = connected_clients.get(request.sid)
-
-    if not client:
+    '''Handle participant signal that they think task is complete'''    
+    client = participant(request.sid)
+    if not client or not (session := SESSIONS.get(client['room'])):
         return
-
     payload = payload or {}
-    sender = client['id']  # removed - payload['from'] 
-    
-    logger.info(f'Client {sender} has sent a TASK COMPLETE signal')
-
-    event = event_log.record(client['room'], 'task_complete',
-                             sender=sender, kind=client['kind'])
-    
-    emit('task_complete', {'from': sender, 'seq': event['seq'],
-                           'ts': event['ts']},
-         to=client['room'])
-                                                        
+    error = session.on_status(client['id'], client['kind'],
+                              done=payload.get('done', True),
+                              answer=payload.get('answer'))
+    if error:
+        emit('status_error', {'error': error})                                               
 
 # --- agent traces are ws events but NOT broadcast
 @socketio.on('agent_trace')

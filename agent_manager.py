@@ -86,12 +86,6 @@ async def start_agent_handler(request):
             {"error": "agent_id and room_id must be 1-32 letters, digits, _ or - ONLY"},
             status=400)
 
-    image_file = resolve_image(image_prefix, agent_id)
-    if image_file is None:
-        return web.json_response(
-            {"error": f"image not found for prefix '{image_prefix}' and agent {agent_id}"},
-            status=400)
-        
 
     key = (room_id, agent_id)
     if key in RUNNING_AGENTS:
@@ -111,6 +105,15 @@ async def start_agent_handler(request):
                                         "model": data["model"]})
 
         task = Task(data.get("task") or DEFAULT_TASK)
+
+        if data.get("stimuli") and data.get("round"):
+            image_file = task.material_path(data["stimuli"], data["round"], agent_id)
+        else:
+            image_file = resolve_image(data.get("image_path") or "image", agent_id)
+
+        if image_file is None or not image_file.is_file():
+            raise ValueError(f"no stimulus file for agent {agent_id}")
+        
         
         client = Client(
             id=agent_id, room=room_id, image_file=str(image_file),
