@@ -108,8 +108,10 @@ class Session:
 
         self.socketio.emit("session_start",
                            {"session_id": self.id,
-                            "rounds": len(self.order)},
-                           to=self.room)
+                            "rounds": len(self.order),
+                            "answer_format": self.task.defn.answer.model_dump(),
+                            "participants": list(self.condition.participants)
+                           }, to=self.room)
 
         self.socketio.start_background_task(self._run)
 
@@ -147,11 +149,17 @@ class Session:
 
             
     def _run_round(self, number: int, round_id: str):
+
+        materials = {p: self.task.material_url(self.stimuli_name, round_id, p)
+                     for p in self.condition.participants}
+        
         with self.lock:
             self.round_no = number
             self.status = {p: {"done": False, "answer": None} for p in self.condition.participants}
             self.messages_this_round = 0
             self.end_round_requested = None
+            self.current_materials = materials
+            self.round_started_at = time.monotonic()
 
         materials = {p: self.task.material_url(self.stimuli_name, round_id, p)
                      for p in self.condition.participants}
@@ -164,11 +172,12 @@ class Session:
         self.socketio.emit("round_start", {
             "round": number, "of": len(self.order), "materials": materials,
             "time_limit": self.rules.time_limit,
-            "clear_chat": self.rules.clear_chat_between_rounds
+            "clear_chat": self.rules.clear_chat_between_rounds,
+            "participants": list(self.condition.participants)
             },
             to=self.room)
 
-        started = time.monotonic()
+        started =  self.round_started_at
         warned = False
         while True:
             self.socketio.sleep(CHECK_EVERY_S)
@@ -323,6 +332,30 @@ class Session:
 
         return None
 
+
+    def public_state(self) -> dict:
+        """
+        What a page needs when it connects
+        (doesn't include answers)
+        """
+        with self.lock:
+            state = {
+                "session_id": self.id,
+                "rounds": len(self.order),
+                "answer_format": self.task.defn.answer.model_dump(),
+                "participants": list(self.condition.participants),
+                "round": self.round_no,
+                "status": {p: s["done"] for p, s in self.status.items()}
+            }
+            if self.round_no is not None:
+                state["materials"] = self.current_materials
+                state["seconds_left"] = (
+                    None if self.rules.time_limit is None else
+                    max(0, round(self.rules.time_limit - (time.monotonic() - self.round_started_at))))
+
+        return state
+     
+    
 
     def _check_answer(self, answer) -> str | None:
         spec = self.task.defn.answer

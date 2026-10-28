@@ -127,3 +127,31 @@ h2 {
   font-style: italic;
   color: #666;
 }
+
+#notice {
+    min-height: 1.4em;
+    padding: 4px 16px;
+    color: #e6a817;
+}
+
+.round-divider {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    margin: 12px 0;
+}
+
+.status {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-left: 4px;
+    border-radius: 10px; background: #555;
+}
+
+.status.done {
+    background: #2e8b57;
+}
+
+#done-panel label {
+    display: block;
+}

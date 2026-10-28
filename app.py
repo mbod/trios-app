@@ -30,8 +30,6 @@ _ = load_dotenv()
 ROOM_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
-SESSION_META_FIELDS = ("session_id", "task", "imagepath", "condition", "notes")
-
 PARTICIPANTS=['A','B','C']
 
 STIMULUS_FILE_TYES = {".svg", ".png", ".jpg", ".txt"}
@@ -103,13 +101,10 @@ def chatroom(room_id):
     participants = [user_id] if user_id else ['A','B','C']
     
     
-    imagepath = request.args.get('imagepath', 'image')
-        
     return render_template('chatroom.html',
                            room=room_id,
                            participants=participants,
-                           imagepath = imagepath
-                           )
+                          )
 
 
 
@@ -193,17 +188,14 @@ def add_agent(agent_id, room_id):
         return auth_check
 
 
-
-    imagepath = request.args.get('imagepath', 'image')
-
-    
     # Delegate spawning to the Agent Manager daemon
     try:
         r = requests.post(
             f"{AGENT_MANAGER_URL}/start",
             json={"agent_id": agent_id,
                   "room_id": room_id,
-                  "image_path": imagepath,
+                  "stimuli": request.args.get("stimuli"),
+                  "round": request.args.get("round"),
                   "condition": request.args.get("condition"),
                   "task": request.args.get("task"),
                   "model": request.args.get("model")
@@ -312,6 +304,9 @@ def handle_connect(auth):
                      
     connected_clients[sid] = identity
 
+    if (session := SESSIONS.get(room)):
+        emit('session_state', session.public_state())
+    
 @socketio.on('disconnect')
 def handle_disconnect(reason=None):
     '''
@@ -395,7 +390,9 @@ def handle_type(payload):
 def handle_begin_task(payload):
     '''Signal that task has begin and participants can begin'''
     pass
-    
+
+
+"""
 @socketio.on('task_complete')
 def handle_end_task(payload):
     '''Handle participant signal that they think task is complete'''    
@@ -407,8 +404,33 @@ def handle_end_task(payload):
                               done=payload.get('done', True),
                               answer=payload.get('answer'))
     if error:
-        emit('status_error', {'error': error})                                               
+        emit('status_error', {'error': error})                                   """           
 
+
+
+@socketio.on('task_complete')
+def handle_task_complete(payload):
+    logger.info("task_complete from sid=%s payload=%s", request.sid, payload)
+    client = participant(request.sid)
+    if not client:
+        logger.warning("task_complete: sender is not a participant: %s",
+                       connected_clients.get(request.sid))
+        return
+    session = SESSIONS.get(client['room'])
+    if not session:
+        logger.warning("task_complete: no session in room %s; running: %s",
+                       client['room'], list(SESSIONS))
+        return
+    payload = payload or {}
+    error = session.on_status(client['id'], client['kind'],
+                              done=payload.get('done', True),
+                              answer=payload.get('answer'))
+    logger.info("task_complete: on_status returned %r", error)
+    if error:
+        emit('status_error', {'error': error})
+        
+
+        
 # --- agent traces are ws events but NOT broadcast
 @socketio.on('agent_trace')
 def handle_agent_trace(payload):
@@ -420,7 +442,14 @@ def handle_agent_trace(payload):
                      sender=client['id'], kind='agent',
                      payload=payload or {})
 
-    
+
+
+def participant(sid):
+    """The connected client if it may send events (human or agent); None for observers."""
+    client = connected_clients.get(sid)
+    if client and client['kind'] in ('human', 'agent'):
+        return client
+    return None    
 
     
 if __name__ == "__main__":

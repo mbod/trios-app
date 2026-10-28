@@ -32,18 +32,9 @@ logging.basicConfig(
 LOG = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
-IMAGES_DIR = (BASE_DIR / "static" / "images").resolve()
+
 ID_PATTERN = re.compile(r"^[A-z0-9_-]{1,32}$")
 
-def resolve_image(image_prefix: str, agent_id: str) -> Path | None:
-    """
-    Return the agent's image path if it exists else None
-    """
-    candidate = (IMAGES_DIR / f"{image_prefix}{agent_id}.svg").resolve()
-    if candidate.is_relative_to(IMAGES_DIR) and candidate.is_file():
-        return candidate
-
-    return None
 
 # Registry: (room_id, agent_id) -> {"job": asyncio.Task, "client": Client}
 RUNNING_AGENTS = {}
@@ -77,9 +68,6 @@ async def start_agent_handler(request):
     data = await request.json()
     agent_id = data.get("agent_id", "")
     room_id = data.get("room_id", "")
-    image_prefix = data.get("image_path") or "image"
-
-
     
     if not ID_PATTERN.match(agent_id) or not ID_PATTERN.match(room_id):
         return web.json_response(
@@ -106,13 +94,16 @@ async def start_agent_handler(request):
 
         task = Task(data.get("task") or DEFAULT_TASK)
 
-        if data.get("stimuli") and data.get("round"):
-            image_file = task.material_path(data["stimuli"], data["round"], agent_id)
-        else:
-            image_file = resolve_image(data.get("image_path") or "image", agent_id)
+        stimuli, round_id = data.get("stimuli"), data.get("round")
 
-        if image_file is None or not image_file.is_file():
-            raise ValueError(f"no stimulus file for agent {agent_id}")
+        if not stimuli or not round_id:
+            raise ValueError("stimuli and round are required")
+
+        
+        image_file = task.material_path(stimuli, round_id, agent_id)
+
+        if image_file.is_file():
+            raise ValueError(f"no stimulus file for agent {agent_id}: {image_file}")
         
         
         client = Client(

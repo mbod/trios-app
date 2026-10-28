@@ -2,17 +2,13 @@
 
 
 <div id="top-bar">
-
   <div id="home-header">Room {{ room }}</div>
-  <div id="completion-indicators">
-    Completion Message: 
-    {% for part in participants %}
-    <label>{{part}}</label>
-    <input type="radio" id="complete-{{part}}" disabled/>
-    {% endfor %}
-  </div>
-  
+  <div id="round-info">Waiting for the session to start</div>
+  <div id="time-left"></div>
+  <div id="status-indicators"></div>
 </div>
+
+<div id="notice" aria-live="polite"></div>
 
 <div id="room-container">
 
@@ -30,32 +26,23 @@
   <div id="stimuli">
     {% for part in participants %}
     <div class="from{{part}} stimImage">
-
-
-      <!--
-          <img src="{{url_for('static', filename='images/'+imagepath+part+'.svg')}}"/>
-	  -->
-	  <img src="/stimuli/common_lines/animal_tangrams/{{imagepath}}/{{part}}.svg"/>
-	  
-        </div>
+      <img id="stim-{{part}}" alt="Image for participant {{part}}" hidden>
+    </div>
     {% endfor %}
 
 
     {% if participants|length==1 %}
 
-	
-	<div id="message-box">
+    <div id="done-panel" hidden>
+      <div id="answer-prompt"></div>
+      <div id="answer-options"></div>
+      <button id="done-btn" type="button">We're done</button>
+    </div>  
 
-	  <!--
-	      <input type="text" placeholder="Enter your message" id="message-input" name="message" />
-	  -->
-
-
-	      <textarea type="text" placeholder="Enter your message"
-			id="message-input" name="message"
-			rows="4"></textarea>
-
-
+    <div id="message-box">
+      <textarea type="text" placeholder="Enter your message"
+		id="message-input" name="message"
+		rows="4"></textarea>
       
       <button type="submit" id="send-btn" onclick="sendMessage()">Send</button>
     </div>
@@ -79,7 +66,8 @@
       });
       let lastSeq=0;
       console.log(socketio);
-
+      const isParticipant = {{ (participants|length==1)|tojson }};
+      
       
       {% if participants|length==1 %}
       const from = '{{participants[0]}}';
@@ -133,6 +121,59 @@
 		  sendMessage();
 	      }
       });
+
+
+      /* ---- DONE AND ANSWER ---- */
+      let iAmDone = false;
+
+      function chosen() {
+        return [...document.querySelectorAll('#answer-options input:checked')].map(cb => cb.value);
+      }
+
+      function limitChoices() {
+        const full = chosen().length >= answerFormat.choose;
+        document.querySelectorAll('#answer-options input').forEach(cb => {
+          cb.disabled = iAmDone || (full && !cb.checked);
+        });
+      }
+
+      function setDoneButton(done) {
+        iAmDone = done;
+        document.getElementById('done-btn').textContent = done ? 'Not done yet' : "We're done";
+        limitChoices();
+      }
+
+      function resetDonePanel(done) {
+        const box = document.getElementById('answer-options');
+        box.replaceChildren();
+        setText('answer-prompt', `When your group agrees, choose ${answerFormat.choose}:`);
+        for (const [id, label] of Object.entries(answerFormat.options)) {
+          const lab = document.createElement('label');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = id;
+          cb.addEventListener('change', limitChoices);
+          lab.append(cb, ' ' + label);
+          box.appendChild(lab);
+        }
+        setDoneButton(Boolean(done));
+        document.getElementById('done-panel').hidden = false;
+      }
+
+      document.getElementById('done-btn').addEventListener('click', () => {
+        if (!inRound) return;
+        if (iAmDone) {
+          socketio.emit('task_complete', { done: false });
+          return;
+        }
+        const answer = chosen();
+        if (answer.length !== answerFormat.choose) {
+          notice(`Please choose ${answerFormat.choose} options first.`);
+          return;
+        }
+        socketio.emit('task_complete', { done: true, answer: answer });
+      });
+
       
       
       {% endif %}
@@ -176,12 +217,6 @@
       /* END TYPING indicator */
       
 
-    /* TASK COMPLETE message */
-    socketio.on("task_complete", function(message) {
-	console.log('WS: task_complete ' + message.from) ;
-	if (typeof message.seq === "number") lastSeq = Math.max(lastSeq, message.seq);
-	taskComplete(message.from);
-    });
 
 
       
@@ -197,13 +232,6 @@
 
 
 
-    function taskComplete(senderID) {
-	console.log('taskComplete: participant '+ senderID);
-	const complete_status = document.getElementById('complete-'+senderID);
-	if (complete_status) {
-	    complete_status.checked = true;
-	}
-    }
       
         
     function createChatItem(message, sender) {
@@ -245,7 +273,129 @@
 				  context_seq: composeSeq ?? lastSeq });
        composeSeq = null;
       msgInput.value = "";
-    }
+   }
+      
+
+
+      /* ---- SESSION AND ROUNDS ---- */
+      let answerFormat = null;      // {choose, options}
+      let inRound = false;
+      let timerHandle = null;
+
+      const END_REASONS = {
+	  all_done: "everyone is done",
+	  time_limit: "time is up",
+	  message_limit: "message limit reached",
+	  experimenter: "ended by the experimenter",
+	  session_end: "the session ended",
+      };
+
+      function setText(id, text) {
+	  const el = document.getElementById(id);
+	  if (el) el.textContent = text;
+      }
+
+      function notice(text) {
+	  setText('notice', text);
+      }
+
+      function addDivider(text) {
+	  const messages = document.getElementById('messages');
+	  const p = document.createElement('p');
+	  p.className = 'round-divider';
+	  p.textContent = text;
+	  messages.appendChild(p);
+	  messages.scrollTop = messages.scrollHeight;
+      }
+
+      function showStatus(statuses) {
+	  const box = document.getElementById('status-indicators');
+	  box.textContent = 'Done:';
+	  for (const [p, done] of Object.entries(statuses)) {
+	      const span = document.createElement('span');
+	      span.id = 'status-' + p;
+	      span.className = 'status' + (done ? ' done' : '');
+	      span.textContent = p;
+	      box.appendChild(span);
+	  }
+      }
+
+      function showMaterials(materials) {
+	  for (const [p, url] of Object.entries(materials)) {
+	      const img = document.getElementById('stim-' + p);
+	      if (img) { img.src = url; img.hidden = false; }
+	  }
+      }
+
+      function startTimer(seconds) {
+	  clearInterval(timerHandle);
+	  if (seconds == null) { setText('time-left', ''); return; }
+	  const deadline = Date.now() + seconds * 1000;
+	  const tick = () => {
+	      const left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+	      setText('time-left', `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} left`);
+	  };
+	  tick();
+	  timerHandle = setInterval(tick, 1000);
+      }
+
+      function enterRound(round, of, materials, statuses, secondsLeft) {
+	  inRound = true;
+	  setText('round-info', `Round ${round} of ${of}`);
+	  showMaterials(materials);
+	  showStatus(statuses);
+	  startTimer(secondsLeft);
+	  notice('');
+	  if (isParticipant) resetDonePanel(statuses[from]);
+      }
+
+      socketio.on('session_start', (data) => {
+	  answerFormat = data.answer_format;
+	  setText('round-info', `The session is starting: ${data.rounds} rounds`);
+      });
+
+      socketio.on('session_state', (s) => {
+	  answerFormat = s.answer_format;
+	  if (s.round != null) {
+	      enterRound(s.round, s.rounds, s.materials, s.status, s.seconds_left);
+	  } else {
+	      setText('round-info', 'Waiting for the next round');
+	  }
+      });
+
+      socketio.on('round_start', (data) => {
+	  if (data.clear_chat) document.getElementById('messages').replaceChildren();
+	  addDivider(`Round ${data.round} of ${data.of}`);
+	  const statuses = Object.fromEntries(data.participants.map(p => [p, false]));
+	  enterRound(data.round, data.of, data.materials, statuses, data.time_limit);
+      });
+
+      socketio.on('participant_status', (data) => {
+	  const el = document.getElementById('status-' + data.participant);
+	  if (el) el.classList.toggle('done', data.done);
+	  if (isParticipant && data.participant === from) setDoneButton(data.done);
+      });
+
+      socketio.on('round_warning', (data) => notice(`${data.seconds_left} seconds left`));
+      socketio.on('answers_differ', () => notice("Your answers don't all match yet. Keep discussing."));
+      socketio.on('status_error', (data) => notice(data.error));
+
+      socketio.on('round_end', (data) => {
+	  inRound = false;
+	  clearInterval(timerHandle);
+	  setText('time-left', '');
+	  addDivider(`Round ${data.round} ended: ${END_REASONS[data.reason] || data.reason}`);
+	  setText('round-info', 'Waiting for the next round');
+	  notice('');
+	  if (isParticipant) document.getElementById('done-panel').hidden = true;
+      });
+
+      socketio.on('session_end', () => {
+	  setText('round-info', 'The session is complete. Thank you!');
+	  notice('');
+      });
+
+      
 
 
       

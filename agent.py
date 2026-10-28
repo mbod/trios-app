@@ -59,7 +59,7 @@ class Client:
         self.task = task
         self.settings = settings
 
-
+        self.greeted = False
 
         self.rng = random.Random(f"{seed}-{room}-{id}") if seed is not None else random.Random()
 
@@ -231,6 +231,15 @@ class Client:
         @self.sio.on("round_start")
         async def on_round_start(payload):
             self._trace_system_prompt()
+            if not self.greeted:
+                self.greeted = True
+                await self.say(self.INITIAL_GREETING,
+                           self.settings.cooldown_after_reply,
+                           context_seq=self.last_seq
+                           )
+
+
+
             
         @self.sio.event
         async def disconnect():
@@ -461,10 +470,6 @@ class Client:
                                    auth=auth,
                                    transports=['websocket','polling'])
 
-            await self.say(self.INITIAL_GREETING,
-                           self.settings.cooldown_after_reply,
-                           context_seq=self.last_seq
-                           )
             await self.sio.wait()
 
         except asyncio.CancelledError:
