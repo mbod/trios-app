@@ -17,6 +17,7 @@ import random
 import threading
 import time
 from importlib import metadata
+import subprocess
 
 import requests
 
@@ -75,7 +76,7 @@ class Session:
 
     def _plan_rounds(self) -> list[str]:
         order = list(self.stimuli.rounds)
-        if self.rules.order == "shuffle":
+        if self.rules.order == "shuffled":
             seed = self.condition.seed
             random.Random(f"{seed}-{self.id}" if seed is not None else None).shuffle(order)
 
@@ -110,7 +111,8 @@ class Session:
                            {"session_id": self.id,
                             "rounds": len(self.order),
                             "answer_format": self.task.defn.answer.model_dump(),
-                            "participants": list(self.condition.participants)
+                            "participants": list(self.condition.participants),
+                            "code": code_version()
                            }, to=self.room)
 
         self.socketio.start_background_task(self._run)
@@ -123,15 +125,14 @@ class Session:
     def _run(self):
         reason = "completed"
         try:
+            self._start_agents()
             for number, round_id in enumerate(self.order, start=1):
-                if self.end_round_requested:
+                if self.end_session_requested:
                     break
-                self._start_agents(round_id)
                 self._run_round(number, round_id)
-                self._stop_agents()
                 if number < len(self.order) and not self.end_session_requested:
                     self.socketio.sleep(self.rules.pause_between_rounds)
-            if self.end_round_requested:
+            if self.end_session_requested:
                 reason = "experimenter"
 
         except Exception as e:
@@ -141,6 +142,12 @@ class Session:
 
         finally:
             self._stop_agents()
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline and any(
+                    c["room"] == self.room and c["kind"] == "agent"
+                    for c in list(self.clients.values())):
+                self.socketio.sleep(0.2)
+            
             self.log.end_session(self.room, payload={"reason": reason})
             self.socketio.emit("session_end", {"session_id": self.id,
                                                "reason": reason},
@@ -161,19 +168,17 @@ class Session:
             self.current_materials = materials
             self.round_started_at = time.monotonic()
 
-        materials = {p: self.task.material_url(self.stimuli_name, round_id, p)
-                     for p in self.condition.participants}
-
         self.log.set_round(self.room, number)
         self.log.record(self.room, "round_start",
                         payload={"round": number, "round_id": round_id,
                                  "materials": materials })
 
         self.socketio.emit("round_start", {
-            "round": number, "of": len(self.order), "materials": materials,
+            "round": number, "of": len(self.order), "round_id": round_id,
+            "stimuli": self.stimuli_name, "materials": materials,
+            "participants": list(self.condition.participants),
             "time_limit": self.rules.time_limit,
             "clear_chat": self.rules.clear_chat_between_rounds,
-            "participants": list(self.condition.participants)
             },
             to=self.room)
 
@@ -238,7 +243,7 @@ class Session:
             results = {p: {**s, **self.task.score(s["answer"], correct)}
                        for p, s in self.status.items()}
             answers = [s["answer"] for s in self.status.values()]
-            agreed = all(answers) and len({rozenset(a) for a in answers}) == 1
+            agreed = all(answers) and len({frozenset(a) for a in answers}) == 1
             messages = self.messages_this_round
             self.round_no = None
 
@@ -255,12 +260,11 @@ class Session:
 
     # --- agents -----------------------
 
-    def _start_agents(self, round_id: str):
+    def _start_agents(self):
         for agent_id in self.condition.agent_ids:
             r = requests.post(f"{AGENT_MANAGER_URL}/start", timeout=5, json={
                 "agent_id": agent_id, "room_id": self.room,
                 "condition": self.condition.name, "task": self.task.defn.name,
-                "stimuli": self.stimuli_name, "round": round_id
             })
             r.raise_for_status()
 
@@ -272,7 +276,7 @@ class Session:
 
             if set(self.condition.agent_ids) <= present:
                 return
-
+            self.socketio.sleep(0.2)
         return RuntimeError(f"agents did not connect within {AGENT_CONNECT_TIMEOUT_S}s")
     
 
@@ -305,18 +309,24 @@ class Session:
                 return "not a participant in this session"
 
             if done:
-                if answer is not None:
-                    if (error := self._check_answer(answer)):
-                        return error
-
-                    elif self.rules.require_answer and kind == "human":
+                if answer is None:
+                    if self.rules.require_answer:
                         return "please choose an answer first"
+    
+                elif (error := self._check_answer(answer)):
+                    return error
 
-            self.status[participant] == {"done": bool(done), "answer": answer if done else None}
+                else:
+                    answer = sorted(answer)
+
+            new = {"done": bool(done), "answer": answer if done else None}
+            if self.status[participant] == new:
+                return None
+            self.status[participant] = new
+
             disagree = (self.rules.require_agreement
                         and all(s["done"] for s in self.status.values())
                         and not self._all_done())
-
 
         self.log.record(self.room, "participant_status",
                         sender=participant, kind=kind,
@@ -380,3 +390,13 @@ def _version(package: str) -> str | None:
         return metadata.version(package)
     except metadata.PackageNotFoundError:
         return None
+
+def code_version() -> dict:
+    """The git commit the server is running, and whether files have changed since."""
+    def git(*args):
+        return subprocess.run(["git", *args], capture_output=True, text=True).stdout.strip()
+    try:
+        changed = git("status", "--porcelain").splitlines()
+        return {"commit": git("rev-parse", "HEAD"), "uncommitted_changes": changed}
+    except FileNotFoundError:
+        return {"commit": None, "uncommitted_changes": None}

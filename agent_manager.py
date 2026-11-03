@@ -14,7 +14,7 @@ from tasks import Task
 from aiohttp import web
 from dotenv import load_dotenv
 
-from agent import Client
+from agent import Agent
 
 _ = load_dotenv()
 
@@ -36,7 +36,7 @@ BASE_DIR = Path(__file__).resolve().parent
 ID_PATTERN = re.compile(r"^[A-z0-9_-]{1,32}$")
 
 
-# Registry: (room_id, agent_id) -> {"job": asyncio.Task, "client": Client}
+
 RUNNING_AGENTS = {}
 
 BASE_WS_URL = "http://127.0.0.1:5555"
@@ -94,20 +94,9 @@ async def start_agent_handler(request):
 
         task = Task(data.get("task") or DEFAULT_TASK)
 
-        stimuli, round_id = data.get("stimuli"), data.get("round")
-
-        if not stimuli or not round_id:
-            raise ValueError("stimuli and round are required")
-
         
-        image_file = task.material_path(stimuli, round_id, agent_id)
-
-        if image_file.is_file():
-            raise ValueError(f"no stimulus file for agent {agent_id}: {image_file}")
-        
-        
-        client = Client(
-            id=agent_id, room=room_id, image_file=str(image_file),
+        agent = Agent(
+            id=agent_id, room=room_id,
             ws_url=BASE_WS_URL, socketio_path=SOCKETIO_PATH,
             task=task, settings=settings, seed=cond.seed
         )
@@ -122,16 +111,16 @@ async def start_agent_handler(request):
     }
 
     # Spawn directly in the existing asyncio event loop
-    job = asyncio.create_task(client.run(auth),
+    job = asyncio.create_task(agent.run(auth),
                                name=f"agent-{room_id}-{agent_id}")
-    RUNNING_AGENTS[key] = {"job": job, "client": client,
+    RUNNING_AGENTS[key] = {"job": job, "agent": agent,
                            "condition": cond.name, 
                            "seed": cond.seed
                            }
 
     job.add_done_callback(lambda t: _on_agent_done(key, t))
     
-    LOG.info(f"Started agent {agent_id} in Room {room_id} with IMAGE {image_file.name}")
+    LOG.info(f"Started agent {agent_id} in Room {room_id}")
     
     return web.json_response({
         "status": "started",
@@ -148,12 +137,12 @@ async def config_handler(request):
     agents = {}
     for (room, agent_id), info in RUNNING_AGENTS.items():
         if room == room_id:
-            client = info["client"]
+            agent = info["agent"]
             agents[agent_id] = {
                 "condition": info["condition"],
                 "seed": info["seed"],
-                "task": client.task.defn.name,
-                "settings": client.settings.model_dump()
+                "task": agent.task.defn.name,
+                "settings": agent.settings.model_dump()
             }
 
     return web.json_response({"agents": agents})

@@ -51,8 +51,9 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 
-socketio = SocketIO(app, logger=True, engineio_logger=True)
+socketio = SocketIO(app) #, logger=True, engineio_logger=True)
 
+logger.info("Socket.IO async mode %s", socketio.async_mode)
 
 
 
@@ -322,8 +323,6 @@ def handle_disconnect(reason=None):
 
 @socketio.on('message')
 def handle_message(payload):
-
-    logger.info('MESSAGE - ', payload, request.sid)
 
     client = connected_clients.get(request.sid)
 

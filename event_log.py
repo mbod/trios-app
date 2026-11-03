@@ -30,6 +30,9 @@ class EventLog:
 
     def start_session(self, room, session_id, meta):
         with self._lock:
+            path = self.dir / f"{session_id}.jsonl"
+            if path.exists():
+                raise ValueError(f"session {session_id} already has a log file")
             self.active[room] = {"session_id": session_id, "round": None}
             self._save_state()
             return self.record(room, "session_start", payload=meta)
@@ -60,7 +63,9 @@ class EventLog:
             return event
 
     def _save_state(self):
-        self._state_path.write_text(json.dumps(self.active, indent=2))
+        tmp = self._state_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self.active, indent=2))
+        tmp.replace(self._state_path)
 
     # --- recording ------------------------------------------------------
 

@@ -8,7 +8,8 @@ actions:
   suggest_difference: suggest a possible difference or similarity
   summarize: summarize what the group has established
   wait: wait silently if you have nothing useful to add
-  task_complete: indicate that you think the group has completed the task
+  task_complete: signal that you think your group has agreed on the answer, and give that answer
+  withdraw: take back your task done signal if you no longer think the group has finished
 
 prompts:
   system: system.j2

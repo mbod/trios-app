@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 from config import NAME_PATTERN
 
 TASK_DIR = Path(__file__).resolve().parent / "tasks"
-REQUIRED_ACTIONS = {"wait", "task_complete"}
+REQUIRED_ACTIONS = {"wait", "task_complete", "withdraw"}
 REQUIRED_PROMPTS = {"system", "decide", "turn", "silence"}
 
 
@@ -62,16 +62,23 @@ class TaskDef(BaseModel):
         return self
 
 
-def make_turn_action(actions: dict[str,str]):
+def make_turn_action(actions: dict[str,str], answer: "AnswerSpec"):
     """
-    Build the TurnAction output schema from the task's actions
+    Build the TurnAction output schema from the task's actions and answer format
     """
+    option_ids = tuple(answer.options)
+    options_text = "; ".join(f"{k} = {label}" for k, label in answer.options.items())
+
     return create_model(
         "TurnAction",
         __doc__="What to do on this turn",
         current_action=(Literal[tuple(actions)], Field(description="the action to take")),
         message=(str, Field(default="", description=(
-            "the chat message to send, or empty string if waiting or task_complete"))),
+            "the chat message to send; it can accompany task_complete or withdraw"
+            "Leave empty to send nothing"))),
+        answer=(list[Literal[option_ids]] | None, Field(default=None, description=(
+            f"only with task_complete: your group's answer, {answer.choose} different "
+            f"options from: {options_text}"))),
     )
 
 
@@ -88,7 +95,7 @@ class Task:
             trim_blocks=True,
             lstrip_blocks=True
         )
-        self.TurnAction = make_turn_action(self.defn.actions)
+        self.TurnAction = make_turn_action(self.defn.actions, self.defn.answer)
         for template in self.defn.prompts.values():
             self.env.get_template(template)
 

@@ -49,6 +49,13 @@ class AgentSettings(BaseModel):
     silence_chance: float = Field(0.25, ge=0, le=1)
 
 
+    # Behavior (strategies.py has details of turn taking strategies)
+    turn_taking: str = "decide_then_act"
+    interrupt: Literal["send_anyway", "cancel"] = "send_anyway"
+    memory: Literal["full", "none"] = "full"
+    
+
+    
     # Messages
     max_words: int | None = None            # sent to model to restrict output
 

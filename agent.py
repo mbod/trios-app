@@ -1,111 +1,379 @@
-# agent.py
+"""An LLM participant in a session.
+
+Two parts:
+  - handlers (register_handlers) record what happens in the room, then queue a trigger;
+  - one loop (act_loop) takes at most one turn at a time, using the turn-taking
+    strategy named in the agent's settings (see strategies.py).
+"""
 
 import asyncio
+import hashlib
+import logging
 import random
 import time
+from dataclasses import dataclass
+
 import socketio
-import logging
-import hashlib
-from pathlib import Path
-
-from config import AgentSettings
-from tasks import Task
-from llm import build_chat_model, structured
-
 from pydantic import BaseModel, Field
 
-from dotenv import load_dotenv
-
-_ = load_dotenv()
-
+from config import AgentSettings
+from llm import build_chat_model, structured
+from tasks import Task
 
 LOG = logging.getLogger(__name__)
+
+
+# Model calling parameters
 CALL_TIMEOUT_S = 60
 RETRY_ATTEMPTS = 3
 RETRY_BASE_DELAY_S = 1.0
 RETRY_BUDGET_S = 20
 
 
+
 class SpeakDecision(BaseModel):
     """
-    Whether to speak next in the group chat
+    Decide whether to speak next in the group chat
     """
     speak: bool = Field(description="true if you should send a message now")
     reason: str = Field(description="brief reason for the decision")
 
 
 
+@dataclass
+class Trigger:
+    """
+    What action or event prompted a turn?
+    """
+    kind: str             # "message" | "silence" | "round_start" | "status"
+    sender: str | None = None
+    text: str = ""
 
-class Client:
-    INITIAL_GREETING = "Hi! I'm here ready to work on the task"
-    
 
-    def __init__(self, id: str,
-                 room: str,
-                 image_file: str,
-                 ws_url: str,
-                 socketio_path: str,
-                 task: Task,
-                 settings: AgentSettings,
-                 seed: int | None = None
-                 ):
+class Agent:
+    def __init__(self, id: str, room: str, ws_url: str, socketio_path: str,
+                 task: Task, settings: AgentSettings, seed: int | None = None):
 
-        
+        from strategies import STRATEGIES
+        if settings.turn_taking not in STRATEGIES:
+            raise ValueError(f"unknown turn_taking '{settings.turn_taking}'; "
+                             f"choose from {sorted(STRATEGIES)}")
+
+        self.strategy = STRATEGIES[settings.turn_taking]
+
         self.id = id
         self.room = room
         self.ws_url = ws_url
         self.socketio_path = socketio_path
-
         self.task = task
         self.settings = settings
-
-        self.greeted = False
-
         self.rng = random.Random(f"{seed}-{room}-{id}") if seed is not None else random.Random()
 
-
-        self.image = Path(image_file).read_text()
-        others = [part for part in task.defn.participants if part != id]  
-
-        # create system prompt from prompt template with participant specific materials
-        self.prompt = task.render("system", participant=id, others=others, materials=self.image)
-        
         chat_model = build_chat_model(settings)
         self.decider = structured(chat_model, SpeakDecision, settings.provider)
         self.actor = structured(chat_model, task.TurnAction, settings.provider)
-
-        
-        
-        
-        self.history = []
         self.sio = socketio.AsyncClient()
 
-
-        # flag to indicate whether agent has
-        # sent completion message and should stop working
-        self.task_completed = False
+        self.prompt = ""
+        self.history = []
+        self.last_seq = 0
+        self.last_heard_at = time.monotonic()
         self.others_typing = set()
 
-
-        # Turn taking state
+        # flags for activity in current round
+        self.in_round = False
+        self.done = False
+        self.my_answer = None
+        self.others_done = {}
+        
+        # Turn Taking
+        self.triggers = asyncio.Queue()
+        self.turn = None
         self.last_spoke_at = 0.0
-        self.last_heard_at = time.monotonic()
-        self.cooldown_seconds = self.rng.uniform(*self.settings.cooldown_after_silence)
-        self.speak_lock = asyncio.Lock()
-        self.last_seq = 0    # last server seq this agent has seen
+        self.cooldown_seconds = 0.0
+        self.running = True
+        self._loop_task = None
         self._trace_tasks = set()
 
-        # Background tasks
-        self.silence_task = None
-        self.pending_response_task = None
-
         self.register_handlers()
+        LOG.info(f"Agent {id}: {settings.model}, {settings.turn_taking}")
 
-        
 
-    # --- helper functions
+    # ------- what happens in the room ---------------
 
-    async def _ask(self, runnable, stage: str, instruction: str):
+    def register_handlers(self):
+        @self.sio.on("round_start")
+        async def on_round_start(data):
+            self.start_round(data)
+
+
+        @self.sio.on("round_end")
+        async def on_round_end(data):
+            self.in_round = False
+            self._drain_triggers()
+            self.history.append({"role": "user",
+                                 "content": f"[Round {data['round']} has ended.]"})
+
+        @self.sio.on("message")
+        async def on_message(data):
+            sender, text, seq = data.get("from"), data.get("message", ""), data.get("seq")
+            if isinstance(seq, int):
+                self.last_seq = max(self.last_seq, seq)
+
+            if not sender or not text:
+                return
+
+            self.last_heard_at = time.monotonic()
+            self.others_typing.discard(sender)
+            if sender == self.id:
+                return
+            self.history.append({"role": "user", "content": f"{sender}: {text}"})
+
+            if not self.in_round:
+                return
+
+            if self.settings.interrupt == "cancel" and self.turn and not self.turn.done():
+                self.turn_cancel()
+
+            self.triggers.put_nowait(Trigger("message", sender, text))
+
+            
+        @self.sio.on("typing")
+        async def on_typing(data):
+            if sender and sender != send.id:
+                if data.get("state") == "start":
+                    self.others_typing.add(sender)
+                else:
+                    self.others_typing.discard(sender)
+
+        @self.sio.on("participant_status")
+        async def on_status(data):
+            who, done = data.get("participant"), bool(data.get("done"))
+            if who == self.id:
+                self.done = done
+                if not done:
+                    self.my_answer = None
+                return
+            if self.others_done.get(who) == done:
+                return
+            self.others_done[who] = done
+            self.note(f"{who} has signalled they think the round is complete" if done
+                     else f"{who} has withdrawn their done signal", trigger=True)
+
+        @self.sio.on("round_warning")
+        async def on_warning(data):
+            self.note("Everyone is done, but the answers don't all match", trigger=True)
+
+        @self.sio.on("status_error")
+        async def on_status_error(data):
+            self.my_answer = None
+            self.note(f"Your done signal was not accepted: {data.get('error')}")
+            self.trace(stage="status_error", outcome="rejected",
+                       error=data.get('error'))
+
+    
+    def start_round(self, data):
+
+        # get stimuli for participant
+        image = self.task.material_path(data["stimuli"], data["round_id"], self.id).read_text()
+        others = [p for p in data["participants"] if p != self.id]
+
+        # build system prompt for participant in task
+        self.prompt = self.task.render("system", participant=self.id, others=others,
+                                       materials=image)
+
+        if self.settings.memory == "none":      # start each round with clear memory
+            self.history = []
+        self.history.append({"role": "user",
+                             "content": f"[Round {data['round']} of {data['of']} has started. You have a new image. It is in your instructions above]"})
+        self.in_round = True
+        self.done = False
+        self.my_answer = None
+        self.others_done = {p: False for p in others}
+        self._drain_triggers()
+        self._trace_system_prompt()
+        self.triggers.put_nowait(Trigger("round_start"))
+
+
+    def note(self, text: str, trigger: bool = False):
+        """
+        Add a notice to the agent's history, as a human would see it on screen
+        """
+        self.history.append({"role": "user", "content": f"[{text}]"})
+        if trigger and self.in_round:
+            self.triggers.put_nowait(Trigger("status", text=text))
+
+
+    # --- taking turns -------------------------------
+
+    async def act_loop(self):
+        while self.running:
+
+            try:
+                trigger = await self.next_trigger()
+
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                LOG.exception(f"{self.id} waiting for a trigger failed")
+                self.trace(stage="loop", outcome="error",
+                           error=f"{type(e).__name__}: {e}"[:500])
+                await asyncio.sleep(1)
+                continue
+            
+            if trigger is None or not self.in_round:
+                continue
+
+            self.turn = asyncio.create_task(self.strategy(self, trigger))
+            try:
+                await self.turn
+            except asyncio.CancelledError:                  # the agent itself is stopping
+                if asyncio.current_task().cancelling():
+                    raise
+                self.trace(stage="turn", outcome="cancelled", trigger=trigger.kind,
+                           context_seq=self.last_seq)
+
+            except Exception as e:
+                LOG.exception(f"{self.id} turn failed")
+                self.trace(stage="turn", outcome="error",
+                           error=f"{type(e).__name__}: {e}"[:500])
+
+            finally:
+                self.turn = None
+            
+
+    async def next_trigger(self) -> Trigger | None:
+        """
+        The next thing to respond to. If several are waiting: a new round
+        first, then a status change, otherwise the latest message.
+        None means nothing to do this time; a silence trigger if the group
+        has been quiet long enough.
+        """
+        try:
+            first = await asyncio.wait_for(
+                self.triggers.get(), timeout=self.rng.uniform(*self.settings.silence_check_every)
+            )
+        except TimeoutError:
+            quiet_for = time.monotonic() - self.last_heard_at
+            if (not self.in_round or self.cooling_down()
+                    or quiet_for < self.settings.silence_wait):
+                return None
+            return Trigger("silence") if self.rng.random() < self.settings.silence_chance else None
+
+        waiting = [first]
+        while not self.triggers.empty():
+            waiting.append(self.triggers.get_nowait())
+        return self._pick(waiting)                
+
+
+                
+
+    def _drain_triggers(self):
+        """
+        Empty triggers queue
+        """
+        while not self.triggers.empty():
+            self.triggers.get_nowait()
+
+
+    def cooling_down(self) -> bool:
+        """
+        Is agent in cooling down period?
+        """
+        return time.monotonic() - self.last_spoke_at < self.cooldown_seconds
+
+    def typing_note(self) -> str:
+        typing = sorted(self.others_typing)
+        return f"Currently typing: {', '.join(typing)}." if typing else "Nobody else is typing"
+
+    def status_note(self) -> str:
+        """
+        Who has signalled done - as seen in indicators in chatroom UI
+        """
+        labels = self.task.defn.answer.options
+        parts = []
+        if self.done and self.my_answer:
+            answer = ", ".join(labels.get(a, a) for a in self.my_answer)
+            parts.append(f"You have signalled done, with the answer: {answer}")
+        others = sorted(p for p, d in self.others_done.items() if d)
+        parts.append(f"Also signalled done: {', '.join(others)}." if others
+                     else "Nobody else has signalled done.")
+        return "\n".join(parts)
+
+
+    TRIGGER_PRIORITY = ("round_start", "status")
+    
+    def _pick(self, waiting: list[Trigger]) --> Trigger:
+        """
+        From serveral waiting triggers: a new round first, then a status
+        change (both skip the decision)m otherwise the newest message
+        """
+        for kind in self.TRIGGER_PRIORITY:
+            for t in reversed(waiting):
+                if t.kind == kind:
+                    return t
+        return waiting[-1]
+    
+    
+    # --- actions ------------------
+    async def act(self, action, context_seq: int, cooldown):
+        """
+        Carry out the action the model chose
+        """
+        if action.current_action == "wait":
+            return
+        if action.message:
+            await self.say(action.message, cooldown, context_seq)
+        if action.current_action == "task_complete":
+            same = self.done and sorted(action.answer or []) == sorted(self.my_answer or [])
+            if not same:
+                await self.signal_done(True, action.answer)
+        elif action.current_action == "withdraw" and self.done:
+            await self.signal_done(False)
+
+
+
+
+    async def say(self, text: str, cooldown, context_seq: int | None = None):
+        """
+        Send message to chat
+        """
+        text = (text or "").strip()
+        if text.startswith(f"{self.id}:"):
+            text = text[len(self.id)+1:].strip()
+
+        if not text or not self.in_round or not self.sio.connected:
+            return
+        self.history.append({"role": "assistant",
+                             "content": f"{self.id}: {text}"})
+        self.last_spoke_at = time.monotonic()
+        self.cooldown_seconds = self.rng.uniform(*cooldown)
+
+        message = {"from": self.id,
+                   "room": self.room,
+                   "message": text}
+
+        if context_seq is not None:
+            message["context_seq"] = context_seq
+
+        await self.sio.emit("message", message)
+
+
+
+    async def signal_done(self, done: bool, answer=None):
+        """
+        Signal (or withdraw) done. The server's participant_status confirms it
+        """
+        if done:
+            self.my_answer = answer
+        if self.sio.connected:
+            await self.sio.emit("task_complete",
+                                {"done": done, "answer": answer})
+            
+
+    # --- calling the model and tracing ---------------------------------------
+
+    async def ask(self, runnable, stage: str, instruction: str):
         """Call a structured model with retries; trace every attempt."""
 
         base = {
@@ -132,14 +400,14 @@ class Client:
                 async with asyncio.timeout(min(CALL_TIMEOUT_S, remaining)):
                     result = await runnable.ainvoke(messages)
             except asyncio.CancelledError:
-                self._trace(**base, outcome="cancelled", attempt=attempt, latency_ms=elapsed_ms())
+                self.trace(**base, outcome="cancelled", attempt=attempt, latency_ms=elapsed_ms())
                 raise
             except TimeoutError:
-                self._trace(**base, outcome="timeout", attempt=attempt, latency_ms=elapsed_ms())
+                self.trace(**base, outcome="timeout", attempt=attempt, latency_ms=elapsed_ms())
                 continue
             except Exception as e:
                 error = f"{type(e).__name__}: {e}"[:500]
-                self._trace(**base, outcome="llm_error", attempt=attempt,
+                self.trace(**base, outcome="llm_error", attempt=attempt,
                             latency_ms=elapsed_ms(), error=error)
                 LOG.warning("%s: %s attempt %d failed: %s", self.id, stage, attempt, error)
                 if not self._retryable(e):
@@ -157,13 +425,13 @@ class Client:
                 "model_reported": meta.get("model_name") or meta.get("model"),
             }
             if result["parsing_error"]:
-                self._trace(**base, **details, outcome="parse_error",
+                self.trace(**base, **details, outcome="parse_error",
                             error=str(result["parsing_error"])[:500],
                             raw=str(getattr(raw, "content", ""))[:2000])
                 return None
 
             parsed = result["parsed"]
-            self._trace(**base, **details, outcome="ok", result=parsed.model_dump())
+            self.trace(**base, **details, outcome="ok", result=parsed.model_dump())
             return parsed
 
         return None
@@ -176,16 +444,8 @@ class Client:
             return True
         return status in (408, 409, 429) or status >= 500
 
-    
 
-    def _typing_note(self) -> str:
-        typing = sorted(self.others_typing)
-        if typing:
-            return f"Currently typing: {', '.join(typing)}."
-        return "Nobody else is typing."
-
-
-    def _trace(self, **payload):
+    def trace(self, **payload):
         """
         Send a trace event without waiting for it.
         Never blocks or raises
@@ -207,288 +467,33 @@ class Client:
        
 
     def _trace_system_prompt(self):
-        self._trace(stage="system_prompt", outcome="ok",
+        self.trace(stage="system_prompt", outcome="ok",
                     prompt_sha256=hashlib.sha256(self.prompt.encode()).hexdigest(),
                     prompt=self.prompt)
-            
-    # ----------
 
-        
-
-    def register_handlers(self):
-        @self.sio.event
-        async def connect():
-            LOG.info(f"Agent {self.id} connected")
-
-            if self.silence_task is None or self.silence_task.done():
-                self.silence_task = asyncio.create_task(self.silence_monitor())
-            self._trace_system_prompt()
-
-        @self.sio.on("session_start")
-        async def on_session_start(payload):
-            self._trace_system_prompt()
-
-        @self.sio.on("round_start")
-        async def on_round_start(payload):
-            self._trace_system_prompt()
-            if not self.greeted:
-                self.greeted = True
-                await self.say(self.INITIAL_GREETING,
-                           self.settings.cooldown_after_reply,
-                           context_seq=self.last_seq
-                           )
-
-
-
-            
-        @self.sio.event
-        async def disconnect():
-            LOG.info(f"Agent {self.id} disconnected")
-            
-        @self.sio.on("message")
-        async def on_message(payload):
-            sender = payload.get("from")
-            text = payload.get("message", "")
-
-            if self.task_completed or not sender or not text:
-                return
-
-            self.last_heard_at = time.monotonic()
-            self.others_typing.discard(sender)
-
-            seq = payload.get("seq")
-            if isinstance(seq, int):
-                self.last_seq = max(self.last_seq, seq)
-            
-            if sender == self.id:
-                return               # don't add echo to history
-            
-            self.history.append({
-                "role": "user",
-                "content": f"{sender}: {text}"
-            })
-
-            LOG.info(f"{self.id} heard {sender}: {text}")
-
-            # Cancel previous pending response because the conversational context changed.
-            if self.pending_response_task and not self.pending_response_task.done():
-                self.pending_response_task.cancel()
-
-            self.pending_response_task = asyncio.create_task(
-                self.maybe_respond_later(sender, text)
-            )
-
-        @self.sio.on("typing")
-        async def on_typing(payload):
-            sender = payload.get("from")
-            if not sender or sender == self.id:
-                return
-            if payload.get("state") == "start":
-                self.others_typing.add(sender)
-            else:
-                self.others_typing.discard(sender)
-
-        @self.sio.on("task_complete")
-        async def on_task_complete(payload):
-            sender = payload.get("from")
-
-            seq = payload.get("seq")
-            if isinstance(seq, int):
-                self.last_seq = max(self.last_seq, seq)
-
-            
-            if sender and sender != self.id and not self.task_completed:
-                self.history.append({
-                    "role": "user",
-                     "content": f"[{sender} has signalled they think the task is complete]"
-                })
-
-            
-            
-
-
-    # --------- action functions
-
+    def _loop_stopped(self, task):
+        if not task.cancelled() and task.exception():
+            LOG.error(f"{self.id}: turn loop stopped", exc_info=task.exception())
     
-    async def say(self, text: str, cooldown_range, context_seq: int | None = None):
-        """
-        This is where an agent sends a chat message to chatroom
-        """
 
-        text = (text or "").strip()
-        prefix = f"{self.id}:"
+    # --- running --------------------------------------------------------------
 
-        if text.startswith(prefix):
-            text = text[len(prefix):].strip()
-
-        if not text or self.task_completed or not self.sio.connected:
-            return
-
-        self.history.append({"role": "assistant", "content": f"{self.id}: {text}"})
-        self.last_spoke_at = time.monotonic()
-        self.cooldown_seconds = self.rng.uniform(*cooldown_range)
-
-
-        message = {"from": self.id, "room": self.room, "message": text}
-        if context_seq is not None:
-            message["context_seq"] = context_seq
-        
-        await self.sio.emit("message", message)
-
-        
-
-
-                
-    async def silence_monitor(self):
-        """
-        Handles how long to stay silent while monitoring activity in chatroom
-        """
-
-        while not self.task_completed:
-            await asyncio.sleep(self.rng.uniform(*self.settings.silence_check_every))
-
-            try:
-                now = time.monotonic()
-                if now - self.last_heard_at < self.settings.silence_wait:
-                    continue
-
-
-                if now - self.last_spoke_at < self.cooldown_seconds:
-                    continue
-                if self.speak_lock.locked():
-                    continue
-                if self.pending_response_task and not self.pending_response_task.done():
-                    continue
-
-                if self.rng.random() < self.settings.silence_chance:
-                    await self.respond(situation=self.task.render('silence'),
-                                       cooldown_range=self.settings.cooldown_after_silence)
-
-            except Exception:
-                LOG.exception(f"{self.id}: silence monitor error")
-                                       
-            
-    
-        
-        
-    async def maybe_respond_later(self, sender: str, text: str):
-        """
-        Add latency to agent responses and check last spoke and cooldown periods
-        to provide more human-like response timing
-        """
-        try:
-            # Human-ish latency.
-            await asyncio.sleep(self.rng.uniform(*self.settings.think_time))
-
-            # check to see if cooldown period greater than last spoke at and keep quiet if so
-            if time.monotonic() - self.last_spoke_at < self.cooldown_seconds:
-                LOG.info(f"{self.id} staying quiet: cooldown")
-                self._trace(stage="gate", outcome="cooldown",
-                            context_seq = self.last_seq)
-                return
-            
-            decision = await self.decide_whether_to_speak(sender, text)
-            LOG.info(f"{self.id} speak decision: {decision}")
-
-            if decision and decision.speak:
-                await self.respond(cooldown_range=self.settings.cooldown_after_reply)
-
-        except asyncio.CancelledError:
-            LOG.info(f"{self.id} reconsidering because a newer message arrived")
-            raise
-
-        
-
-    async def decide_whether_to_speak(self, sender: str, text: str) -> SpeakDecision | None:
-        prompt = self.task.render("decide", participant=self.id,
-                                  last_sender=sender, last_message=text,
-                                  typing_note=self._typing_note())
-        
-        return await self._ask(self.decider, "decide", prompt)
-
-
-    async def respond(self, situation: str = "", cooldown_range=(2,8)):
-        """
-        Take a turn (just one)
-        - ask the LLM what do
-        - do this
-
-        Params:
-            situation: optional str giving situational context for prompt
-            cooldown_range: default 2-8 secs
-        
-
-        """
-
-        async with self.speak_lock:
-            if self.task_completed:
-                return
-
-            if time.monotonic() - self.last_spoke_at < self.cooldown_seconds:
-                return
-
-            # construct turn taking prompt    
-            prompt = self.task.render("turn", situation=situation, typing_note=self._typing_note(),
-                                      max_words=self.settings.max_words)
-
-
-            stage = "silence_turn" if situation else "turn"
-            context_seq = self.last_seq
-
-
-            resp = await self._ask(self.actor, stage, prompt)
-
-            if not resp:
-                return
-
-            LOG.info(f"{self.id} turn: {resp}")
-
-            # take turn action
-            if resp.current_action == "task_complete":
-                await self.signal_complete()
-            elif resp.current_action == "wait":
-                LOG.info(f"{self.id} chose to wait")
-            else:
-                await self.say(resp.message, cooldown_range, context_seq=context_seq)
-
-
-    async def signal_complete(self):
-        self.task_completed = True
-        LOG.info(f"{self.id} signalled task complete")
-
-        if self.sio.connected:
-            await self.sio.emit("task_complete", {"from": self.id, "room": self.room })
-                                
-
-        
     async def run(self, auth):
-
-
         try:
-            await self.sio.connect(self.ws_url,
-                                   socketio_path=self.socketio_path,
-                                   auth=auth,
-                                   transports=['websocket','polling'])
-
+            await self.sio.connect(self.ws_url, socketio_path=self.socketio_path,
+                                   auth=auth, transports=["websocket", "polling"])
+            
+            self._loop_task = asyncio.create_task(self.act_loop())
+            self._loop_task.add_done_callback(self._loop_stopped)
             await self.sio.wait()
 
         except asyncio.CancelledError:
-            LOG.info(f"Agent {self.id} received cancellation request.")
             raise
         except Exception:
             LOG.exception(f"Agent {self.id} encountered an error")
         finally:
-            self._cancel_all_subtasks()
+            self.running = False
+            if self._loop_task:
+                self._loop_task.cancel()
             if self.sio.connected:
                 await self.sio.disconnect()
-            
-
-    def _cancel_all_subtasks(self):
-        """Cancels all background loops and pending LLM response tasks."""
-        if self.silence_task and not self.silence_task.done():
-            self.silence_task.cancel()
-        if self.pending_response_task and not self.pending_response_task.done():
-            self.pending_response_task.cancel()
-            
-    
-

@@ -4,6 +4,7 @@ Decide whether Participant {{ participant }} should speak next.
 Last speaker: {{ last_sender }}
 Last message: {{ last_message }}
 {{ typing_note }}
+{{ status_note }}
 
 You are simulating a natural human chatroom participant.
 
@@ -19,3 +20,6 @@ Do NOT speak if:
 - The latest message is better answered by someone else.
 - You recently spoke and should let others talk.
 
+Send a done signal if:
+- The group has agreed on the answer and you
+have not signalled done yet, or you have signalled done and no longer agree.
