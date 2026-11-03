@@ -303,7 +303,7 @@ class Agent:
 
     TRIGGER_PRIORITY = ("round_start", "status")
     
-    def _pick(self, waiting: list[Trigger]) --> Trigger:
+    def _pick(self, waiting: list[Trigger]) -> Trigger:
         """
         From serveral waiting triggers: a new round first, then a status
         change (both skip the decision)m otherwise the newest message
