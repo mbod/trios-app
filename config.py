@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
 NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 PROVIDERS = {"openai", "anthropic", "google_genai", "ollama"}
-Range = type[float, float]
+Range = tuple[float, float]
 
 
 class AgentSettings(BaseModel):
@@ -54,11 +54,11 @@ class AgentSettings(BaseModel):
     interrupt: Literal["send_anyway", "cancel"] = "send_anyway"
     memory: Literal["full", "none"] = "full"
     
-
+    perception: Literal["raw", "self_description"] = "raw"
     
     # Messages
     max_words: int | None = None            # sent to model to restrict output
-
+    typing_wpm: Range | None = (35, 45)     # None messages appear instantly once generated
 
     @field_validator("model")
     @classmethod
@@ -82,7 +82,7 @@ class Condition(BaseModel):
     description: str = ""
     seed: int | None = None
     participants: dict[str, Literal["human"] | AgentSettings]
-    
+    rules: dict[str, Any] = {}
     
     @property
     def agent_ids(self) -> list[str]:

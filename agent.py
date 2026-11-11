@@ -40,6 +40,13 @@ class SpeakDecision(BaseModel):
 
 
 
+class SelfDescription(BaseModel):
+    """
+    Your description of your materials
+    """
+    description: str = Field(description="your description")
+    
+
 @dataclass
 class Trigger:
     """
@@ -63,6 +70,7 @@ class Agent:
 
         self.id = id
         self.room = room
+        self.round_no = None
         self.ws_url = ws_url
         self.socketio_path = socketio_path
         self.task = task
@@ -72,13 +80,17 @@ class Agent:
         chat_model = build_chat_model(settings)
         self.decider = structured(chat_model, SpeakDecision, settings.provider)
         self.actor = structured(chat_model, task.TurnAction, settings.provider)
+
+        self.describer = structured(chat_model, SelfDescription, settings.provider)
+        self.description = ""
+        
         self.sio = socketio.AsyncClient()
 
         self.prompt = ""
         self.history = []
         self.last_seq = 0
         self.last_heard_at = time.monotonic()
-        self.others_typing = set()
+        self.others_typing = {}
 
         # flags for activity in current round
         self.in_round = False
@@ -104,8 +116,13 @@ class Agent:
     def register_handlers(self):
         @self.sio.on("round_start")
         async def on_round_start(data):
-            self.start_round(data)
-
+            try:
+                self.start_round(data)
+            except Exception as e:
+                LOG.exception(f"{self.id}: start_round failed")
+                self.trace(stage="error", outcome="start_round_failed",
+                           error=f"{type(e).__name__}: {e}"[:500])
+                await self.sio.disconnect()
 
         @self.sio.on("round_end")
         async def on_round_end(data):
@@ -124,7 +141,7 @@ class Agent:
                 return
 
             self.last_heard_at = time.monotonic()
-            self.others_typing.discard(sender)
+            self.others_typing.pop(sender, None)
             if sender == self.id:
                 return
             self.history.append({"role": "user", "content": f"{sender}: {text}"})
@@ -137,14 +154,17 @@ class Agent:
 
             self.triggers.put_nowait(Trigger("message", sender, text))
 
-            
         @self.sio.on("typing")
         async def on_typing(data):
-            if sender and sender != send.id:
-                if data.get("state") == "start":
-                    self.others_typing.add(sender)
-                else:
-                    self.others_typing.discard(sender)
+            sender = data.get("from")
+            if not sender or sender == self.id:
+                return
+            if data.get("state") == "start":
+                self.others_typing[sender] = time.monotonic()
+            else:
+                self.others_typing.pop(sender, None)
+                self.last_heard_at = time.monotonic()
+            
 
         @self.sio.on("participant_status")
         async def on_status(data):
@@ -179,8 +199,13 @@ class Agent:
         others = [p for p in data["participants"] if p != self.id]
 
         # build system prompt for participant in task
-        self.prompt = self.task.render("system", participant=self.id, others=others,
-                                       materials=image)
+
+        self.self_description = ""
+        self.stimuli_name = data["stimuli"]
+        self.image = image
+        
+        self.render_prompt()
+        self._trace_system_prompt()
 
         if self.settings.memory == "none":      # start each round with clear memory
             self.history = []
@@ -224,6 +249,9 @@ class Agent:
             if trigger is None or not self.in_round:
                 continue
 
+            if trigger.kind == "round_start":
+                await self.describe_materials()
+
             self.turn = asyncio.create_task(self.strategy(self, trigger))
             try:
                 await self.turn
@@ -241,7 +269,31 @@ class Agent:
             finally:
                 self.turn = None
             
+    def render_prompt(self):
+        self.prompt = self.task.render(
+            "system", materials=self.image, self_description=self.self_description,
+            **self.task.prompt_context(self.stimuli_name, self.id))
 
+
+    async def describe_materials(self):
+        """
+        Look at the round's materials before joining the conversation
+        """
+        if self.settings.perception != "self_description":
+            return
+
+        round_at_start = self.round_no
+        result = await self.ask(self.describer, "self_description",
+                                self.task.render("describe"), use_history=False)
+
+        if self.round_no != round_at_start:
+            return
+
+        self.self_description = result.description if result else ""
+        self.render_prompt()
+        self._trace_system_prompt()
+        
+                
     async def next_trigger(self) -> Trigger | None:
         """
         The next thing to respond to. If several are waiting: a new round
@@ -255,7 +307,7 @@ class Agent:
             )
         except TimeoutError:
             quiet_for = time.monotonic() - self.last_heard_at
-            if (not self.in_round or self.cooling_down()
+            if (not self.in_round or self.cooling_down() or self.typing_now()
                     or quiet_for < self.settings.silence_wait):
                 return None
             return Trigger("silence") if self.rng.random() < self.settings.silence_chance else None
@@ -282,9 +334,22 @@ class Agent:
         """
         return time.monotonic() - self.last_spoke_at < self.cooldown_seconds
 
+
+    TYPING_STALE_S = 30
+
+    def typing_now(self) -> list[str]:
+        """Others currently typing, ignoring indicators older than TYPING_STALE_S."""
+        now = time.monotonic()
+        return sorted(p for p, t in self.others_typing.items()
+                      if now - t < self.TYPING_STALE_S)
+    
+
     def typing_note(self) -> str:
-        typing = sorted(self.others_typing)
-        return f"Currently typing: {', '.join(typing)}." if typing else "Nobody else is typing"
+        typing = self.typing_now()
+        if not typing:
+            return "nobody else is typing"
+        return f"{' and '.join(typing)} {'is' if len(typing) == 1 else 'are'} typing."
+
 
     def status_note(self) -> str:
         """
@@ -316,14 +381,16 @@ class Agent:
     
     
     # --- actions ------------------
-    async def act(self, action, context_seq: int, cooldown):
+    async def act(self, action, context_seq: int, cooldown, round_at_start=None):
         """
         Carry out the action the model chose
         """
         if action.current_action == "wait":
             return
         if action.message:
-            await self.say(action.message, cooldown, context_seq)
+            sent = await self.say(action.message, cooldown, context_seq, round_at_start)
+            if not sent:
+                return
         if action.current_action == "task_complete":
             same = self.done and sorted(action.answer or []) == sorted(self.my_answer or [])
             if not same:
@@ -334,7 +401,7 @@ class Agent:
 
 
 
-    async def say(self, text: str, cooldown, context_seq: int | None = None):
+    async def say(self, text: str, cooldown, context_seq: int | None = None, round_at_start=None) -> bool:
         """
         Send message to chat
         """
@@ -342,8 +409,21 @@ class Agent:
         if text.startswith(f"{self.id}:"):
             text = text[len(self.id)+1:].strip()
 
-        if not text or not self.in_round or not self.sio.connected:
-            return
+        if not text or not self.sio.connected:
+            return False
+
+        seq_before = self.last_seq
+        typed_s = await self.simulate_typing(text)
+
+        if not self.in_round or (round_at_start is not None
+                                 and self.round_no != round_at_start):
+            self.trace(stage="gate", outcome="stale_round", context_seq=context_seq)
+            return False
+
+        self.trace(stage="typing", outcome="sent", context_seq=context_seq,
+                   typed_s=round(typed_s,1), heard_while_typing=self.last_seq - seq_before)
+    
+        
         self.history.append({"role": "assistant",
                              "content": f"{self.id}: {text}"})
         self.last_spoke_at = time.monotonic()
@@ -373,7 +453,7 @@ class Agent:
 
     # --- calling the model and tracing ---------------------------------------
 
-    async def ask(self, runnable, stage: str, instruction: str):
+    async def ask(self, runnable, stage: str, instruction: str, use_history=True):
         """Call a structured model with retries; trace every attempt."""
 
         base = {
@@ -384,7 +464,7 @@ class Agent:
         }
         messages = [
             {"role": "system", "content": self.prompt},
-            *self.history,
+            *(self.history if use_history else []),
             {"role": "user", "content": instruction},
         ]
         deadline = time.monotonic() + RETRY_BUDGET_S
@@ -474,7 +554,29 @@ class Agent:
     def _loop_stopped(self, task):
         if not task.cancelled() and task.exception():
             LOG.error(f"{self.id}: turn loop stopped", exc_info=task.exception())
-    
+
+
+    async def _emit_typing(self, state: str):
+        if self.sio.connected:
+            await self.sio.emit("typing", {"from": self.id, "state": state})
+
+    async def simulate_typing(self, text: str) -> float:
+        """
+        Show 'typing' for as long as a person would take to type text
+        """
+        wpm = self.settings.typing_wpm
+        if not wpm:
+            return 0.0
+
+        words = len(text)/5       # using 5 chars average per 'word'
+        seconds = words / self.rng.uniform(*wpm) * 60
+        await self._emit_typing("start")
+        try:
+            await asyncio.sleep(seconds)
+        finally:
+            await self._emit_typing("stop")
+        return seconds
+            
 
     # --- running --------------------------------------------------------------
 

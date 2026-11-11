@@ -179,6 +179,20 @@
       {% endif %}
 
 
+      function setChatOpen(open, note) {
+          const input = document.getElementById("message-input");
+          const button = document.getElementById("sent-btn");
+          if (!input) return;
+          input.disabled = !open;
+          if (button) button.disabled = !open;
+          input.placeholder = open ? "Enter your message" : note;
+          if (!open) stopTyping();
+
+      }
+
+
+
+
 
       /* TYPING indicator */
       const typers = new Set();
@@ -272,7 +286,7 @@
        socketio.emit("message", { message: msg, from: from,
 				  context_seq: composeSeq ?? lastSeq });
        composeSeq = null;
-      msgInput.value = "";
+      if (msgInput.disabled === false) msgInput.value = "";
    }
       
 
@@ -355,12 +369,17 @@
       });
 
       socketio.on('session_state', (s) => {
+
+          setChatOpen(s.round !== null && s.round !== undefined, "Wating for the round to start...");
+
 	  answerFormat = s.answer_format;
 	  if (s.round != null) {
 	      enterRound(s.round, s.rounds, s.materials, s.status, s.seconds_left);
 	  } else {
 	      setText('round-info', 'Waiting for the next round');
 	  }
+
+
       });
 
       socketio.on('round_start', (data) => {
@@ -397,7 +416,12 @@
 
       
 
-
+      socketio.on("round_start", () => setChatOpen(true));
+      socketio.on("round_end", () => setChatOpen(false, "Waiting for next round..."));
+      socketio.on("session_end", () => setChatOpen(false, "The session has ended"));
+      socketio.on("message_rejected", (data) => {
+              setChatOpen(false, data.error);
+      });
       
   </script>
 

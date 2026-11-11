@@ -12,6 +12,7 @@ actions:
   withdraw: take back your task done signal if you no longer think the group has finished
 
 prompts:
+  describe: describe.j2
   system: system.j2
   decide: decide.j2
   turn: turn.j2

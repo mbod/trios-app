@@ -329,6 +329,14 @@ def handle_message(payload):
     if not client:
         return
 
+    session = SESSIONS.get(client["room"])
+    if session and not session.round_open():
+        event_log.record(client["room"], "message_rejected", sender=client["id"],
+                         kind=client["kind"], payload={"message": text, "reason": "between_rounds"})
+        emit("message_rejected", {"error": "The next round hasn't started yet"})
+        return
+    
+
     payload = payload or {}
     text = str(payload.get('message','')).strip()
 
@@ -383,6 +391,16 @@ def handle_type(payload):
          to=client['room'], include_self=False)
                                             
 
+@socketio.on('selection')
+def handle_selection(data):
+    client = participant(request.sid)
+    session = SESSIONS.get(client["room"]) if client else None
+    if not session:
+        return
+    error = session.on_selection(client["id"], client["kind"],
+                                 (data or {}).get("selection"))
+    if error:
+        emit("selection_error", {"error": error})
     
     
 @socketio.on('task_begin')

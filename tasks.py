@@ -31,11 +31,13 @@ class Rules(BaseModel):
     warning_before_end: float | None = 60
     require_answer: bool = True
     require_agreement: bool = False
-
+    selection_visibility: Literal["private", "on_done", "live"] = "private"
+    
     
 class StimulusSet(BaseModel):
     model_config = ConfigDict(extra="forbid")
     description: str = ""
+    framing: str = ""
     rounds: dict[str, list[str]]
     
     
@@ -90,7 +92,7 @@ class Task:
         self.dir = TASK_DIR / name
         self.defn = TaskDef(**yaml.safe_load((self.dir / "task.yaml").read_text()))
         self.env = Environment(
-            loader=FileSystemLoader(self.dir),
+            loader=FileSystemLoader([self.dir, TASK_DIR / "_shared"]),
             undefined=StrictUndefined,
             trim_blocks=True,
             lstrip_blocks=True
@@ -153,3 +155,15 @@ class Task:
             "overlap": len(set(answer) & set(correct))
         }
                                  
+
+    def prompt_context(self, stimuli_name: str, participant: str) -> dict:
+        """
+        Variables for the instructions, the same for agents and human task page
+        """
+        return {
+            "participant": participant,
+            "participants": self.defn.participants,
+            "others": [p for p in self.defn.participants if p!= participant],
+            "framing": self.stimuli(stimuli_name).framing,
+        }
+            

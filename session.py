@@ -55,7 +55,9 @@ class Session:
         self.task = Task(task_name)
         self.stimuli_name = stimuli_name
         self.stimuli = self.task.stimuli(stimuli_name)
-        self.rules = Rules(**{**self.task.defn.rules.model_dump(), **overrides})
+        self.rules = Rules(**{**self.task.defn.rules.model_dump(),
+                              **self.condition.rules,
+                              **overrides})
         if set(self.condition.participants) != set(self.task.defn.participants):
             raise ValueError(f"condition {self.condition.name} has participants "
                              f"{sorted(self.condition.participants)}; task {task_name} "
@@ -163,6 +165,7 @@ class Session:
         with self.lock:
             self.round_no = number
             self.status = {p: {"done": False, "answer": None} for p in self.condition.participants}
+            self.selection = {p: [] for p in self.condition.participants}
             self.messages_this_round = 0
             self.end_round_requested = None
             self.current_materials = materials
@@ -240,7 +243,8 @@ class Session:
     def _end_round(self, number: int, round_id: str, reason: str, elapsed: float):
         correct = self.stimuli.rounds[round_id]
         with self.lock:
-            results = {p: {**s, **self.task.score(s["answer"], correct)}
+            results = {p: {**s, "selection": self.selection[p],
+                           **self.task.score(s["answer"], correct)}
                        for p, s in self.status.items()}
             answers = [s["answer"] for s in self.status.values()]
             agreed = all(answers) and len({frozenset(a) for a in answers}) == 1
@@ -257,6 +261,9 @@ class Session:
         self.socketio.emit("round_end", {"round": number, "reason": reason},
                            to=self.room)
 
+    def round_open(self) -> bool:
+        with self.lock:
+            return self.round_no is not None
 
     # --- agents -----------------------
 
@@ -308,6 +315,9 @@ class Session:
             if participant not in self.status:
                 return "not a participant in this session"
 
+            if done and answer is None:
+                answer = self.selection[participant] or None
+            
             if done:
                 if answer is None:
                     if self.rules.require_answer:
@@ -332,8 +342,11 @@ class Session:
                         sender=participant, kind=kind,
                         payload={"done": bool(done), "answer": answer if done else None})
 
-        self.socketio.emit("participant_status", {"participant": participant, "done": bool(done)},
-                           to=self.room)
+        status = {"participant": participant, "done": new["done"]}
+        if self.rules.selection_visibility != "private":
+            status["answer"] = new["answer"]
+        
+        self.socketio.emit("participant_status", status, to=self.room)
 
         if disagree:
             self.log.record(self.room, "answers_differ")
@@ -342,6 +355,51 @@ class Session:
 
         return None
 
+
+    def on_selection(self, participant: str, kind: str, selection) -> str | None:
+        """A participant changes their current selection (a partial answer is fine).
+        Returns an error message for the participant, or None."""
+        spec = self.task.defn.answer
+        with self.lock:
+            if self.round_no is None:
+                return "no round in progress"
+            if participant not in self.selection:
+                return "not a participant in this session"
+            if (not isinstance(selection, list) or len(set(selection)) > spec.choose
+                    or not set(selection) <= spec.options.keys()):
+                return f"choose up to {spec.choose} different options"
+            selection = sorted(set(selection))
+            if selection == self.selection[participant]:
+                return None                           # nothing changed
+            self.selection[participant] = selection
+            st = self.status[participant]
+            withdrew = st["done"] and st["answer"] != selection
+            if withdrew:                              # changing your mind undoes "done"
+                self.status[participant] = {"done": False, "answer": None}
+
+        self.log.record(self.room, "selection", sender=participant, kind=kind,
+                        payload={"selection": selection})
+        self._emit_selection(participant, selection)
+        if withdrew:
+            self.log.record(self.room, "participant_status", sender=participant,
+                            kind=kind, payload={"done": False, "answer": None,
+                                                "cause": "selection_changed"})
+            self.socketio.emit("participant_status",
+                               {"participant": participant, "done": False}, to=self.room)
+        return None
+
+    def _emit_selection(self, participant: str, selection: list):
+        """Send a selection change to whoever may see it: everyone with 'live',
+        otherwise only the participant themselves and observers."""
+        payload = {"participant": participant, "selection": selection}
+        if self.rules.selection_visibility == "live":
+            self.socketio.emit("selection", payload, to=self.room)
+            return
+        for sid, c in list(self.clients.items()):
+            if c["room"] == self.room and (c["id"] == participant or c["kind"] == "observer"):
+                self.socketio.emit("selection", payload, to=sid)
+
+    
 
     def public_state(self) -> dict:
         """

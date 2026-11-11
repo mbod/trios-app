@@ -25,6 +25,12 @@ async def decide_then_act(agent, trigger):
     The behavior of the first pilot tests. Combined with `interrupt: cancel`,
     a new message abandons the turn in progress
     """
+
+    if not agent.in_round:
+        return
+    
+    round_at_start = agent.round_no
+    
     await asyncio.sleep(agent.rng.uniform(*agent.settings.think_time))
     if agent.cooling_down():
         agent.trace(stage="gate", outcome="cooldown", context_seq=agent.last_seq)
@@ -51,6 +57,12 @@ async def decide_then_act(agent, trigger):
                           status_note=agent.status_note(),
                           max_words=agent.settings.max_words))
 
+
+    if not agent.in_round or agent.round_no != round_at_start:
+        agent.trace(stage="gate", outcome="stale_round",
+                    context_seq=context_seq)
+        return
+    
     if action:
         cooldown = (agent.settings.cooldown_after_silence if silence
                     else agent.settings.cooldown_after_reply)
