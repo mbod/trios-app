@@ -58,7 +58,7 @@ class AgentSettings(BaseModel):
     
     # Messages
     max_words: int | None = None            # sent to model to restrict output
-    typing_wpm: Range | None = (35, 45)     # None messages appear instantly once generated
+    typing_wpm: Range | None = None         # None messages appear instantly once generated
 
     @field_validator("model")
     @classmethod

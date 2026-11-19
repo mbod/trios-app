@@ -5,13 +5,24 @@ from typing import Literal
 
 
 import yaml
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, PrefixLoader, ChoiceLoader, TemplateNotFound
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from config import NAME_PATTERN
 
 TASK_DIR = Path(__file__).resolve().parent / "tasks"
 REQUIRED_ACTIONS = {"wait", "task_complete", "withdraw"}
+
+
+DEFAULT_PROMPTS = {
+    "system": "system.j2",
+    "decide": "decide.j2",
+    "turn": "turn.j2",
+    "silence": "silence.j2",
+    "describe": "describe.j2",
+    "reflect": "reflect.j2"
+}
+
 REQUIRED_PROMPTS = {"system", "decide", "turn", "silence"}
 
 
@@ -49,8 +60,9 @@ class TaskDef(BaseModel):
     description: str = ""
     participants: list[str]
     actions: dict[str, str]
-    prompts: dict[str, str]
-    materials: str = "svg"
+    prompts: dict[str, str] = {}
+    materials_name: Literal["picture", "points table"] = "picture"
+    materials: Literal["svg", "html"] = "html"
     answer: AnswerSpec
     rules: Rules = Field(default_factory=Rules)
     
@@ -59,8 +71,7 @@ class TaskDef(BaseModel):
     def check_required(self):
         if missing := REQUIRED_ACTIONS - self.actions.keys():
             raise ValueError(f"task {self.name} is missing actions: {sorted(missing)}")
-        if missing := REQUIRED_PROMPTS - self.prompts.keys():
-            raise ValueError(f"task {self.name} is missing prompts: {sorted(missing)}")
+
         return self
 
 
@@ -91,18 +102,25 @@ class Task:
             raise ValueError(f"invalid task name '{name}'")
         self.dir = TASK_DIR / name
         self.defn = TaskDef(**yaml.safe_load((self.dir / "task.yaml").read_text()))
+        shared = FileSystemLoader(TASK_DIR / "_shared")
         self.env = Environment(
-            loader=FileSystemLoader([self.dir, TASK_DIR / "_shared"]),
+            loader=ChoiceLoader([
+                FileSystemLoader(self.dir),
+                PrefixLoader({"shared": shared}),
+                shared,
+            ]),
             undefined=StrictUndefined,
             trim_blocks=True,
             lstrip_blocks=True
         )
         self.TurnAction = make_turn_action(self.defn.actions, self.defn.answer)
-        for template in self.defn.prompts.values():
-            self.env.get_template(template)
+
+        self.prompts = self.prompt_files()
 
 
     def render(self, prompt: str, **variables) -> str:
+        if prompt not in self.prompts:
+            raise ValueError(f"task {self.defn.name} has no '{prompt}' prompt")
         template = self.env.get_template(self.defn.prompts[prompt])
         return template.render(task=self.defn, **variables).strip()
 
@@ -167,3 +185,19 @@ class Task:
             "framing": self.stimuli(stimuli_name).framing,
         }
             
+
+    def prompt_files(self) -> dict[str, str]:
+        """Prompt name -> template name, for the prompts this task has
+        (in its own folder or in _shared)."""
+        names = {**DEFAULT_PROMPTS, **self.defn.prompts}
+        found = {}
+        for prompt, template in names.items():
+            try:
+                self.env.get_template(template)
+            except TemplateNotFound:
+                if prompt in REQUIRED_PROMPTS or prompt in self.defn.prompts:
+                    raise ValueError(f"task {self.defn.name}: prompt '{prompt}' "
+                                     f"({template}) not found in the task or _shared")
+                continue                      # optional and absent: fine
+            found[prompt] = template
+        return found

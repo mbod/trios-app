@@ -18,8 +18,10 @@ import threading
 import time
 from importlib import metadata
 import subprocess
-
+from pathlib import Path
 import requests
+
+import hashlib
 
 from config import load_condition
 from tasks import Rules, Task
@@ -37,6 +39,8 @@ KEY_PACKAGES = [
 ]
 
 SESSIONS = {}
+
+TASK_DIR = Path(__file__).resolve().parent / "tasks"
 
 
 class Session:
@@ -106,15 +110,21 @@ class Session:
             "stimuli": self.stimuli_name,
             "rules": self.rules.model_dump(),
             "round_order": self.order,
-            "packages": {name: _version(name) for name in KEY_PACKAGES}
+            "packages": {name: _version(name) for name in KEY_PACKAGES},
+            "templates": {
+                name: {"file": str(Path(t.filename).relative_to(TASK_DIR)),
+                       "sha": hashlib.sha256(Path(t.filename).read_bytes()).hexdigest()[:12]}
+                       for name, t in ((n, self.task.env.get_template(f))
+                                       for n, f in self.task.prompt_files().items())
+            },
+            "code": code_version()
         })
 
         self.socketio.emit("session_start",
                            {"session_id": self.id,
                             "rounds": len(self.order),
                             "answer_format": self.task.defn.answer.model_dump(),
-                            "participants": list(self.condition.participants),
-                            "code": code_version()
+                            "participants": list(self.condition.participants)
                            }, to=self.room)
 
         self.socketio.start_background_task(self._run)

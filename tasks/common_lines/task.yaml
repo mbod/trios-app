@@ -19,6 +19,7 @@ prompts:
   silence: silence.j2
 
 
+materials_name: picture
 materials: svg
 
 answer:

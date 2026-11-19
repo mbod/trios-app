@@ -272,6 +272,7 @@ class Agent:
     def render_prompt(self):
         self.prompt = self.task.render(
             "system", materials=self.image, self_description=self.self_description,
+            max_words=self.settings.max_words,
             **self.task.prompt_context(self.stimuli_name, self.id))
 
 
@@ -437,7 +438,7 @@ class Agent:
             message["context_seq"] = context_seq
 
         await self.sio.emit("message", message)
-
+        return True
 
 
     async def signal_done(self, done: bool, answer=None):
@@ -449,7 +450,7 @@ class Agent:
         if self.sio.connected:
             await self.sio.emit("task_complete",
                                 {"done": done, "answer": answer})
-            
+            self.trace(stage="signal", outcome="done" if done else "withdraw", answer=answer)
 
     # --- calling the model and tracing ---------------------------------------
 

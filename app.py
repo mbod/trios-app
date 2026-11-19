@@ -425,28 +425,18 @@ def handle_end_task(payload):
 
 
 
-@socketio.on('task_complete')
-def handle_task_complete(payload):
-    logger.info("task_complete from sid=%s payload=%s", request.sid, payload)
+@socketio.on("task_complete")
+def handle_task_complete(data):
     client = participant(request.sid)
-    if not client:
-        logger.warning("task_complete: sender is not a participant: %s",
-                       connected_clients.get(request.sid))
-        return
-    session = SESSIONS.get(client['room'])
+    session = SESSIONS.get(client["room"]) if client else None
     if not session:
-        logger.warning("task_complete: no session in room %s; running: %s",
-                       client['room'], list(SESSIONS))
         return
-    payload = payload or {}
-    error = session.on_status(client['id'], client['kind'],
-                              done=payload.get('done', True),
-                              answer=payload.get('answer'))
-    logger.info("task_complete: on_status returned %r", error)
+    data = data or {}
+    error = session.on_status(client["id"], client["kind"],
+                              bool(data.get("done")), data.get("answer"))
     if error:
-        emit('status_error', {'error': error})
+        emit("status_error", {"error": error})
         
-
         
 # --- agent traces are ws events but NOT broadcast
 @socketio.on('agent_trace')
