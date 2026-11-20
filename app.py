@@ -14,6 +14,8 @@ from flask_socketio import SocketIO, join_room, leave_room, emit
 from event_log import EventLog
 
 from flask import Flask, request, render_template, session, jsonify, abort, send_from_directory
+from werkzeug.middleware.proxy_fix import ProxyFix 
+
 from datetime import datetime
 import logging
 import requests
@@ -27,6 +29,8 @@ from session import SESSIONS, Session
 
 _ = load_dotenv()
 
+
+
 ROOM_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
@@ -36,9 +40,12 @@ STIMULUS_FILE_TYES = {".svg", ".png", ".jpg", ".txt"}
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get("SECURE_COOKIES") == "1"
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN')
 AGENT_TOKEN = os.environ['AGENT_TOKEN']
+AGENT_MANAGER_URL = os.environ.get("AGENT_MANAGER_URL", "http://127.0.0.1:5556")
 
 
 event_log = EventLog(os.environ.get('LOG_DIR', 'logs'))
@@ -51,7 +58,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 
-socketio = SocketIO(app) #, logger=True, engineio_logger=True)
+socketio = SocketIO(app, async_mode="threading")
 
 logger.info("Socket.IO async mode %s", socketio.async_mode)
 
@@ -70,8 +77,6 @@ connected_clients = {}
 # agents = {}
 
 
-AGENT_MANAGER_URL = "http://127.0.0.1:5556"
-
 
 def require_admin():
     """
@@ -84,6 +89,11 @@ def require_admin():
 
 
 # --- app routes --------------------------------------------------
+
+@app.route('/health')
+def health():
+    return jsonify({"ok": True, "active_sessions": sorted(SESSIONS)})
+
 
 @app.route('/chatroom', defaults={'room_id': 'test'})
 @app.route('/chatroom/<room_id>')
@@ -352,7 +362,7 @@ def handle_message(payload):
 
     
     # message
-    sender = client['id'] or payload['from'] 
+    sender = client['id']
     event = event_log.record(client['room'], 'message',
                              sender=sender,
                              kind=client['kind'],

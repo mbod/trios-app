@@ -216,7 +216,7 @@ class Agent:
         self.my_answer = None
         self.others_done = {p: False for p in others}
         self._drain_triggers()
-        self._trace_system_prompt()
+
         self.triggers.put_nowait(Trigger("round_start"))
 
 

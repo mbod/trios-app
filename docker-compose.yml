@@ -1,0 +1,48 @@
+# Trios app: the web/Socket.IO server and the agent manager, from one image.
+# nginx on the host forwards trios.asc.upenn.edu to 127.0.0.1:5555.
+#
+#   ./deploy.sh                 # pull from GitHub, build, restart
+#   docker compose logs -f app  # follow the server's output
+
+x-app: &app
+  image: trios-app
+  build:
+    context: .
+    args:
+      GIT_COMMIT: ${GIT_COMMIT:-unknown}
+  env_file: .env
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "50m"
+      max-file: "5"
+
+services:
+  app:
+    <<: *app
+    # One worker: all session state is in this process's memory.
+    # Threads: one per WebSocket connection (humans, agents, observers) plus sessions.
+    command: gunicorn --workers 1 --threads 400 --bind 0.0.0.0:5555 --timeout 0 app:app
+    environment:
+      AGENT_MANAGER_URL: http://agents:5556
+      LOG_DIR: /data/logs
+    ports:
+      - "127.0.0.1:5555:5555"        # only reachable from the VM itself (nginx)
+    volumes:
+      - ./data/logs:/data/logs       # session logs live on the host
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5555/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  agents:
+    <<: *app
+    command: python agent_manager.py
+    environment:
+      APP_URL: http://app:5555
+      BIND_HOST: 0.0.0.0              # inside Docker's network only; never published
+    depends_on:
+      app:
+        condition: service_healthy

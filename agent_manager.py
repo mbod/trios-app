@@ -39,8 +39,8 @@ ID_PATTERN = re.compile(r"^[A-z0-9_-]{1,32}$")
 
 RUNNING_AGENTS = {}
 
-BASE_WS_URL = "http://127.0.0.1:5555"
-#SOCKETIO_PATH = "/services/trios-app/socket.io"
+BASE_WS_URL = os.environ.get("APP_URL", "http://127.0.0.1:5555")
+BIND_HOST = os.environ.get("BIND_HOST", "127.0.0.1")
 SOCKETIO_PATH = "/socket.io"
 
 
@@ -209,4 +209,4 @@ if __name__ == "__main__":
         asyncio.get_running_loop().set_exception_handler(log_unhandled)
 
     
-    web.run_app(app, host="127.0.0.1", port=5556)
+    web.run_app(app, host=BIND_HOST, port=5556)

@@ -12,6 +12,7 @@ One session per room
 
 """
 
+import os
 import logging
 import random
 import threading
@@ -29,7 +30,7 @@ from tasks import Rules, Task
 
 LOG = logging.getLogger(__name__)
 
-AGENT_MANAGER_URL = "http://127.0.0.1:5556"
+AGENT_MANAGER_URL = os.environ.get("AGENT_MANAGER_URL", "http://127.0.0.1:5556")
 CHECK_EVERY_S = 0.5      # how often to check whether to end running round
 AGENT_CONNECT_TIMEOUT_S = 15  # how long to wait for agents to join
 KEY_PACKAGES = [
@@ -124,7 +125,8 @@ class Session:
                            {"session_id": self.id,
                             "rounds": len(self.order),
                             "answer_format": self.task.defn.answer.model_dump(),
-                            "participants": list(self.condition.participants)
+                            "participants": list(self.condition.participants),
+                            "code": code_version()
                            }, to=self.room)
 
         self.socketio.start_background_task(self._run)
@@ -460,11 +462,18 @@ def _version(package: str) -> str | None:
         return None
 
 def code_version() -> dict:
-    """The git commit the server is running, and whether files have changed since."""
+    """The git commit the server is running: : from the image (Docker) or from git (development)."""
+
+    if commit := os.environ.get("GIT_COMMIT"):
+        return {"commit": commit, "uncommited_changes": []}
+                
+    
     def git(*args):
         return subprocess.run(["git", *args], capture_output=True, text=True).stdout.strip()
     try:
         changed = git("status", "--porcelain").splitlines()
-        return {"commit": git("rev-parse", "HEAD"), "uncommitted_changes": changed}
+        return {"commit": git("rev-parse", "HEAD"),
+                "uncommitted_changes": changed}
+    
     except FileNotFoundError:
         return {"commit": None, "uncommitted_changes": None}
