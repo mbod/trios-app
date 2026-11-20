@@ -1,0 +1,10 @@
+description: All Human trio
+seed: 42
+
+participants:
+   A:
+      human
+   B:
+      human
+   C:
+      human

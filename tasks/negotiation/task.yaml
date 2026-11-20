@@ -1,0 +1,40 @@
+name: negotiation
+description: Reach an agreement on a number of issues with other group members
+participants: [A, B, C]
+
+actions:
+  say: describe a feature/item in your image
+  ask: ask another participant about a feature/item
+  suggest_difference: suggest a possible difference or similarity
+  summarize: summarize what the group has established
+  wait: wait silently if you have nothing useful to add
+  task_complete: signal that you think your group has agreed on the answer, and give that answer
+  withdraw: take back your task done signal if you no longer think the group has finished
+
+prompts:
+  describe: describe.j2
+  system: system.j2
+  decide: decide.j2
+  turn: turn.j2
+  silence: silence.j2
+
+materials_name: points_table
+materials: html
+
+answer:
+  choose: 3
+  options:
+     issue1: [A, B, C]
+     issue2: [A, B, C]
+     issue3: [A, B, C]
+
+rules:
+   order: shuffled
+   rounds: 6
+   pause_between_rounds: 10
+   clear_chat_between_rounds: false
+   time_limit: 600
+   message_limit: null
+   warning_before_end: 60
+   require_answer: true
+   require_agreement: false

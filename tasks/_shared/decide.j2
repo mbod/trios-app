@@ -1,0 +1,19 @@
+
+Decide whether Participant {{ participant }} should speak next.
+
+Last speaker: {{ last_sender }}
+Last message: {{ last_message }}
+{{ typing_note }}
+{{ status_note }}
+
+
+Speak only if one of these is true:
+- You were directly asked a question.
+- You have new information about your {{ task.materials_name }}.
+- You need to signal done, or withdraw your done signal.
+{% include "decide_reasons.j2" ignore missing %}
+
+Do NOT speak if:
+- You would repeat something you already said.
+- The latest message is better answered by someone else.
+{% include "decide_avoid.j2" ignore missing %}

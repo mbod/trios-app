@@ -1,0 +1,7 @@
+description: Text based grid of letters and symbols, looking for common lines
+framing:
+   Each item is a letter, symbol, emoji or ASCII shape, such as a rocket or rainbow
+rounds:
+   set1: [col1, row3]
+   set2: [col2, row2]
+   set3: [diag_tlbr, diag_bltr]

@@ -1,0 +1,11 @@
+description: Simple objects; 6 colour or shape differences per set, 2 per participant
+framing: >
+  Each picture shows about a dozen simple objects spread across the canvas.
+  The same objects appear in all three pictures, but in different places;
+  where an object is doesn't matter. Some objects differ between the
+  pictures in colour or shape.
+rounds:
+  set1: [cloud, balloon, star, flower, car, triangle]
+  set2: [cloud, balloon, house, star, moon, kite]
+  set3: [apple, chair, fish, clock, butterfly, book]
+  set4: [rocket, cactus, tent, cupcake, planet, castle]

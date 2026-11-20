@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="800" viewBox="0 0 700 800">
+  <rect width="700" height="800" fill="#ffffff"/>
+  <rect x="10" y="10" width="680" height="780" fill="none" stroke="#111111" stroke-width="4"/>
+  <g stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="500" cy="110" rx="34" ry="45" fill="#35a844"/>
+    <path d="M500 155 L494 167 H506 Z" fill="#35a844"/>
+    <path d="M500 167 C487 194 514 206 502 232" fill="none"/>
+    <path d="M125 90 C87 63 63 100 76 136
+             C88 170 112 177 125 157
+             C138 177 162 170 174 136
+             C187 100 163 63 125 90Z" fill="#e52d2d"/>
+    <path d="M125 87 C129 67 140 57 150 52" fill="none"/>
+    <path d="M130 75 C149 60 165 70 167 85 C153 87 140 85 130 75Z" fill="#35a844"/>
+    <ellipse cx="310" cy="115" rx="48" ry="30" fill="#934eb4"/>
+    <path d="M265 115 L230 85 L230 145 Z" fill="#934eb4"/>
+    <circle cx="332" cy="108" r="4" fill="#111"/>
+    <rect x="482" y="200" width="76" height="55" fill="#9a6029"/>
+    <rect x="486" y="255" width="68" height="22" fill="#9a6029"/>
+    <path d="M492 277V322 M548 277V322" fill="none"/>
+    <circle cx="120" cy="260" r="44" fill="#ffd42a"/>
+    <path d="M120 260V236 M120 260L140 272" fill="none"/>
+    <circle cx="302" cy="250" r="24" fill="#ffd42a"/>
+    <circle cx="302" cy="250" r="10" fill="#ffffff"/>
+    <path d="M326 250H388 M361 250V265 M378 250V265" fill="none"/>
+    <path d="M462 375 H532 V446 C532 463 518 474 500 474
+             C482 474 462 463 462 446Z" fill="#2874c8"/>
+    <path d="M532 395 C560 394 561 441 532 440" fill="none"/>
+    <ellipse cx="120" cy="430" rx="9" ry="34" fill="#9a6029"/>
+    <path d="M112 422 C92 382 52 394 66 432
+             C74 453 96 453 112 438Z" fill="#f25196"/>
+    <path d="M128 422 C148 382 188 394 174 432
+             C166 453 144 453 128 438Z" fill="#f25196"/>
+    <path d="M310 394 C285 380 256 384 243 395 V472
+             C265 461 286 461 310 473Z" fill="#35a844"/>
+    <path d="M310 394 C335 380 364 384 377 395 V472
+             C355 461 334 461 310 473Z" fill="#35a844"/>
+    <path d="M310 394V473" fill="none"/>
+    <path d="M478 610 L498 558 H542 L562 610 Z" fill="#ffd42a"/>
+    <path d="M520 610V665 M495 665H545" fill="none"/>
+    <circle cx="150" cy="610" r="42" fill="#ffffff"/>
+    <polygon points="150,592 167,604 160,625 140,625 133,604" fill="#111111"/>
+    <path d="M150 592L150 568 M167 604L189 596 M160 625L174 646
+             M140 625L126 646 M133 604L111 596" fill="none"/>
+    <rect x="340" y="635" width="20" height="55" fill="#9a6029"/>
+    <circle cx="350" cy="610" r="45" fill="#35a844"/>
+  </g>
+</svg>

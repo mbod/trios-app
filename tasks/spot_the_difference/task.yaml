@@ -1,0 +1,78 @@
+name: spot_the_difference
+description: Find the objects that differ between three pictures
+participants: [A, B, C]
+
+actions:
+  say: describe a feature/item in your image
+  ask: ask another participant about a feature/item
+  suggest_difference: suggest a possible difference or similarity
+  summarize: summarize what the group has established
+  wait: wait silently if you have nothing useful to add
+  withdraw: take back your done signal if you no longer think the group has finished
+  task_complete: signal that you think your group has agreed on the answer, and give that answer
+
+
+prompts:
+   system: system.j2
+   decide: decide.j2
+   turn: turn.j2
+   silence: silence.j2
+   describe: describe.j2
+
+
+materials_name: picture
+materials: svg
+
+
+
+answer:
+  choose: 6
+  options:
+    sun: sun
+    cloud: cloud
+    house: house
+    balloon: balloon
+    tree: tree
+    star: star-shaped object
+    heart: heart
+    bush: bush
+    flower: flower
+    car: car
+    boat: sailing boat
+    ball: orange ball
+    triangle: triangle
+    moon: yellow circle or moon
+    kite: kite
+    apple: apple
+    fish: fish
+    chair: chair
+    clock: clock
+    key: key
+    mug: mug
+    butterfly: butterfly
+    book: book
+    lamp: lamp
+    football: football
+    rocket: rocket
+    planet: planet
+    cactus: cactus
+    tent: tent
+    bird: bird
+    mushroom: mushroom
+    bicycle: bicycle
+    cupcake: cupcake
+    leaf: leaf
+    castle: castle
+    drum: drum
+
+rules:
+   order: shuffled
+   rounds: 4
+   pause_between_rounds: 10
+   clear_chat_between_rounds: false
+   time_limit: 300
+   message_limit: null
+   warning_before_end: 60
+   require_answer: true
+   require_agreement: false
+

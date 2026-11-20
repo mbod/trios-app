@@ -1,0 +1,14 @@
+description: Animal tangrams, monochrome, 9 per grid
+framing:
+   Each item is a tangram picture of an animal, made of geometric pieces.
+   People usually recognize them as animals such as a camel, a cat or 
+   a kangaroo, based on how the pieces are arranged.
+rounds:
+   set1: [diag_tlbr, col2]
+   set2: [row1, diag_tlbr]
+   set3: [row1, col3]
+   set4: [col2, col3]
+   set5: [diag_tlbr, col1]
+   set6: [col1, col2]
+   set7: [row1, col2]
+   set8: [col3, row3]

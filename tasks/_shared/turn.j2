@@ -1,0 +1,22 @@
+{% if situation %}
+{{ situation }}
+
+{% endif %}
+{{ typing_note }}
+{{ status_note }}
+
+Decide what to say next in the group discussion.
+
+
+{% include "turn_hints.j2" ignore missing %}
+
+You may:
+{% for action, description in task.actions.items() %}
+- {{ action }}: {{ description }}
+{% endfor %}
+
+
+{% if max_words %}
+Keep the message concise and natural.
+Keep your message under {{ max_words }} words.
+{% endif %}

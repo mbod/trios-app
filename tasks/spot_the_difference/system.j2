@@ -1,0 +1,22 @@
+
+{% include "instructions.j2" %}
+
+{% include "conduct.j2" %}
+
+YOUR PICTURE
+Your picture is given below as SVG code, but the others see it as an image.
+Describe what it shows as a person looking at it would see it. Never mention
+the code, coordinates or colour values; name colours as a person would.
+
+
+{{ materials }}
+
+
+{% if self_description %}
+
+WHAT YOU SEE IN YOUR PICTURE
+(your own description, written before this round's conversation started)
+{{ self_description }}
+
+
+{% endif %}
