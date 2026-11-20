@@ -14,7 +14,7 @@ force="${2:-}"
 git fetch origin
 git checkout "$branch"
 git pull --ff-only origin "$branch"
-if [ -n "$(git status --porcelain)" ]; then
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     echo "Uncommitted changes in $(pwd); not deploying."
     git status --short
     exit 1
