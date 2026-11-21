@@ -465,7 +465,7 @@ def code_version() -> dict:
     """The git commit the server is running: : from the image (Docker) or from git (development)."""
 
     if commit := os.environ.get("GIT_COMMIT"):
-        return {"commit": commit, "uncommited_changes": []}
+        return {"commit": commit, "uncommittd_changes": []}
                 
     
     def git(*args):
