@@ -342,7 +342,7 @@ class Session:
         key = "ok" if trace.get("outcome") == "ok" else "failed"
         with self.lock:
             for counts in (self.calls, self.session_calls):
-                counts.setdefault(agent, {"ok": 0, "failed": 0}[key] += 1
+                counts.setdefault(agent, {"ok": 0, "failed": 0})[key] += 1
                 
     def on_status(self, participant: str, kind: str, done: bool, answer) -> str | None:
         """
