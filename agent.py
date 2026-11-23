@@ -59,7 +59,7 @@ class Trigger:
 
 class Agent:
     def __init__(self, id: str, room: str, ws_url: str, socketio_path: str,
-                 task: Task, settings: AgentSettings, seed: int | None = None):
+                 task: Task, settings: AgentSettings, seed: int | None = None, limits: dict | None = None):
 
         from strategies import STRATEGIES
         if settings.turn_taking not in STRATEGIES:
@@ -93,10 +93,15 @@ class Agent:
         self.others_typing = {}
 
         # flags for activity in current round
+        self.round_epoch = 0
+        self.round_deadline = None
         self.in_round = False
         self.done = False
         self.my_answer = None
         self.others_done = {}
+
+
+        self.limits = limits or {}
         
         # Turn Taking
         self.triggers = asyncio.Queue()
@@ -127,6 +132,7 @@ class Agent:
         @self.sio.on("round_end")
         async def on_round_end(data):
             self.in_round = False
+            self.round_epoch += 1
             self._drain_triggers()
             self.history.append({"role": "user",
                                  "content": f"[Round {data['round']} has ended.]"})
@@ -200,6 +206,8 @@ class Agent:
 
         # build system prompt for participant in task
 
+        self.last_seq = max(self.last_seq, data.get("seq") or 0)
+        
         self.self_description = ""
         self.stimuli_name = data["stimuli"]
         self.image = image
@@ -211,6 +219,12 @@ class Agent:
             self.history = []
         self.history.append({"role": "user",
                              "content": f"[Round {data['round']} of {data['of']} has started. You have a new image. It is in your instructions above]"})
+
+
+        limit = data.get("time_limit")
+        self.round_deadline = time.monotonic() + limit if limit else None
+
+        self.round_epoch += 1
         self.in_round = True
         self.done = False
         self.my_answer = None
@@ -361,6 +375,11 @@ class Agent:
         if self.done and self.my_answer:
             answer = ", ".join(labels.get(a, a) for a in self.my_answer)
             parts.append(f"You have signalled done, with the answer: {answer}")
+
+        if self.round_deadline is not None:
+            left = max(0, int(self.round_deadline - time.monotonic()))
+            parts.append(f"Time left in this round: {left // 60}:{left % 60:02d}.")
+            
         others = sorted(p for p, d in self.others_done.items() if d)
         parts.append(f"Also signalled done: {', '.join(others)}." if others
                      else "Nobody else has signalled done.")
@@ -382,14 +401,14 @@ class Agent:
     
     
     # --- actions ------------------
-    async def act(self, action, context_seq: int, cooldown, round_at_start=None):
+    async def act(self, action, context_seq: int, cooldown, epoch=None, turn_id=None):
         """
         Carry out the action the model chose
         """
         if action.current_action == "wait":
             return
         if action.message:
-            sent = await self.say(action.message, cooldown, context_seq, round_at_start)
+            sent = await self.say(action.message, cooldown, context_seq, epoch, turn_id)
             if not sent:
                 return
         if action.current_action == "task_complete":
@@ -402,7 +421,7 @@ class Agent:
 
 
 
-    async def say(self, text: str, cooldown, context_seq: int | None = None, round_at_start=None) -> bool:
+    async def say(self, text: str, cooldown, context_seq: int | None = None, epoch=None, turn_id=None) -> bool:
         """
         Send message to chat
         """
@@ -416,9 +435,8 @@ class Agent:
         seq_before = self.last_seq
         typed_s = await self.simulate_typing(text)
 
-        if not self.in_round or (round_at_start is not None
-                                 and self.round_no != round_at_start):
-            self.trace(stage="gate", outcome="stale_round", context_seq=context_seq)
+        if not self.in_round or (epoch is not None and epoch != self.round_epoch):
+            self.trace(stage="gate", outcome="stale_round", context_seq=context_seq, turn_id=turn_id)
             return False
 
         self.trace(stage="typing", outcome="sent", context_seq=context_seq,
@@ -430,12 +448,9 @@ class Agent:
         self.last_spoke_at = time.monotonic()
         self.cooldown_seconds = self.rng.uniform(*cooldown)
 
-        message = {"from": self.id,
-                   "room": self.room,
-                   "message": text}
-
-        if context_seq is not None:
-            message["context_seq"] = context_seq
+        message = {"from": self.id, "room": self.room,
+                   "message": text,
+                   "context_seq": context_seq, "turn_id": turn_id}
 
         await self.sio.emit("message", message)
         return True
@@ -454,44 +469,53 @@ class Agent:
 
     # --- calling the model and tracing ---------------------------------------
 
-    async def ask(self, runnable, stage: str, instruction: str, use_history=True):
+    async def ask(self, runnable, stage: str, instruction: str,
+                  use_history: bool = True, turn_id: str | None = None):
         """Call a structured model with retries; trace every attempt."""
-
-        base = {
-            "stage": stage,
-            "context_seq": self.last_seq,
-            "history_len": len(self.history),
-            "instruction": instruction,
-        }
-        messages = [
-            {"role": "system", "content": self.prompt},
-            *(self.history if use_history else []),
-            {"role": "user", "content": instruction},
-        ]
+        base = {"stage": stage, "context_seq": self.last_seq,
+                "history_len": len(self.history), "instruction": instruction,
+                "turn_id": turn_id}
+        messages = [{"role": "system", "content": self.prompt},
+                    *(self.history if use_history else []),
+                    {"role": "user", "content": instruction}]
         deadline = time.monotonic() + RETRY_BUDGET_S
+        slot = provider_slot(self.settings.provider, self.limits)
+        ms = lambda since: int((time.monotonic() - since) * 1000)
 
         for attempt in range(1, RETRY_ATTEMPTS + 1):
-            started = time.monotonic()
-            remaining = deadline - started
-            if remaining <= 0:
-                break
-            elapsed_ms = lambda: int((time.monotonic() - started) * 1000)
+            # --- wait for a slot, make one call, release the slot ---
+            queued = time.monotonic()
+            async with slot:
+                queue_ms = ms(queued)
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    self.trace(**base, outcome="timeout", attempt=attempt, queue_ms=queue_ms)
+                    return None
+                started = time.monotonic()
+                error = None
+                try:
+                    async with asyncio.timeout(min(CALL_TIMEOUT_S, remaining)):
+                        result = await runnable.ainvoke(messages)
+                except asyncio.CancelledError:
+                    self.trace(**base, outcome="cancelled", attempt=attempt,
+                               queue_ms=queue_ms, latency_ms=ms(started))
+                    raise
+                except TimeoutError:
+                    error = "timeout"
+                except Exception as e:
+                    error = e
+                latency_ms = ms(started)
+            # --- slot released: retries and back-off happen without holding it ---
 
-            try:
-                async with asyncio.timeout(min(CALL_TIMEOUT_S, remaining)):
-                    result = await runnable.ainvoke(messages)
-            except asyncio.CancelledError:
-                self.trace(**base, outcome="cancelled", attempt=attempt, latency_ms=elapsed_ms())
-                raise
-            except TimeoutError:
-                self.trace(**base, outcome="timeout", attempt=attempt, latency_ms=elapsed_ms())
+            timing = {"attempt": attempt, "queue_ms": queue_ms, "latency_ms": latency_ms}
+            if error == "timeout":
+                self.trace(**base, **timing, outcome="timeout")
                 continue
-            except Exception as e:
-                error = f"{type(e).__name__}: {e}"[:500]
-                self.trace(**base, outcome="llm_error", attempt=attempt,
-                            latency_ms=elapsed_ms(), error=error)
-                LOG.warning("%s: %s attempt %d failed: %s", self.id, stage, attempt, error)
-                if not self._retryable(e):
+            if error is not None:
+                message = f"{type(error).__name__}: {error}"[:500]
+                self.trace(**base, **timing, outcome="llm_error", error=message)
+                LOG.warning("%s: %s attempt %d failed: %s", self.id, stage, attempt, message)
+                if not self._retryable(error):
                     return None
                 delay = RETRY_BASE_DELAY_S * 2 ** (attempt - 1) * self.rng.uniform(0.5, 1.5)
                 await asyncio.sleep(min(delay, max(0.0, deadline - time.monotonic())))
@@ -499,23 +523,20 @@ class Agent:
 
             raw = result["raw"]
             meta = getattr(raw, "response_metadata", None) or {}
-            details = {
-                "attempt": attempt,
-                "latency_ms": elapsed_ms(),
-                "usage": getattr(raw, "usage_metadata", None),
-                "model_reported": meta.get("model_name") or meta.get("model"),
-            }
+            details = {**timing, "usage": getattr(raw, "usage_metadata", None),
+                       "model_reported": meta.get("model_name") or meta.get("model")}
             if result["parsing_error"]:
                 self.trace(**base, **details, outcome="parse_error",
-                            error=str(result["parsing_error"])[:500],
-                            raw=str(getattr(raw, "content", ""))[:2000])
+                           error=str(result["parsing_error"])[:500],
+                           raw=str(getattr(raw, "content", ""))[:2000])
                 return None
-
             parsed = result["parsed"]
             self.trace(**base, **details, outcome="ok", result=parsed.model_dump())
             return parsed
 
         return None
+
+
 
     @staticmethod
     def _retryable(e) -> bool:

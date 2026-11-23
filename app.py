@@ -354,7 +354,7 @@ def handle_message(payload):
         return
 
 
-    logged = {'message': text}
+    logged = {'message': text, "turn_id": payload.get("turn_id")}
     context_seq = payload.get('context_seq')
 
     if isinstance(context_seq, int):
@@ -454,6 +454,10 @@ def handle_agent_trace(payload):
     client = connected_clients.get(request.sid)
     if not client or client['kind'] != 'agent':
         return
+
+    session = SESSIONS.get(client["room"])
+    if session:
+        session.on_trace(cliend["id"], payload)
 
     event_log.record(client['room'], 'agent_trace',
                      sender=client['id'], kind='agent',

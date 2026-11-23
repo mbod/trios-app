@@ -98,7 +98,8 @@ async def start_agent_handler(request):
         agent = Agent(
             id=agent_id, room=room_id,
             ws_url=BASE_WS_URL, socketio_path=SOCKETIO_PATH,
-            task=task, settings=settings, seed=cond.seed
+            task=task, settings=settings, seed=cond.seed,
+            limits = registry.limits
         )
     except (FileNotFoundError, ValueError, ValidationError) as e:
         return web.json_response({

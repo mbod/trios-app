@@ -1,8 +1,13 @@
 
 import os
+import asyncio
+
 from langchain.chat_models import init_chat_model
 
 from config import AgentSettings
+
+DEFAULT_LIMIT = 10
+_slots: dict[str, asyncio.Semaphore] = {}
 
 
 PROVIDER_DEFAULTS = {
@@ -47,4 +52,9 @@ def structured(chat_model, schema, provider: str):
     return chat_model.with_structured_output(schema, **kwargs)
 
 
+
+def provider_slot(provider: str, limits: dict[str, int]) -> asyncio.Semaphore:
+    if provider not in _slots:
+        _slots[provider] = asyncio.Semaphore(limits.get(provider, DEFAULT_LIMIT))
+    return _slots[provider]
 
