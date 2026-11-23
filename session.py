@@ -39,7 +39,7 @@ KEY_PACKAGES = [
     "langchain-ollama"
 ]
 
-CALL_STAGES = {"decide", "turn", "silence_turn", "self_description"}
+
 
 SESSIONS = {}
 
@@ -80,9 +80,6 @@ class Session:
         self.end_round_requested = None
         self.end_session_requested = False
 
-        self.calls = {}
-        self.session_calls = {}
-        
     # --- setting up -----------
 
     def _plan_rounds(self) -> list[str]:
@@ -166,12 +163,9 @@ class Session:
                     for c in list(self.clients.values())):
                 self.socketio.sleep(0.2)
 
-            with self.lock:
-                calls = {a: {**c, "failure_rate": round(c["failed"] / max(1, c["ok"] + c["failed"]), 3)}
-                         for a, c in self.session_calls.items()}
             
                 
-            self.log.end_session(self.room, payload={"reason": reason, "calls": calls})
+            self.log.end_session(self.room, payload={"reason": reason})
             self.socketio.emit("session_end", {"session_id": self.id,
                                                "reason": reason},
                                to=self.room)
@@ -332,17 +326,6 @@ class Session:
                 self.messages_this_round += 1
 
 
-    def on_trace(self, agent: str, trace: dict):
-        """
-        Count each LLM call attempt by outcome, for this round and the session
-        """
-        if trace.get("stage") not in self.CALL_STAGES or trace.get("outcome") == "cancelled":
-            return
-
-        key = "ok" if trace.get("outcome") == "ok" else "failed"
-        with self.lock:
-            for counts in (self.calls, self.session_calls):
-                counts.setdefault(agent, {"ok": 0, "failed": 0})[key] += 1
                 
     def on_status(self, participant: str, kind: str, done: bool, answer) -> str | None:
         """
@@ -429,13 +412,6 @@ class Session:
         return None
 
 
-    def on_trace(self, agent: str, trace: dict):
-        if trace.get("stage") not in self.CALL_STAGES:
-            return
-
-        with self.lock:
-            counts = self.calls.setdefault(agent, {"ok": 0, "failed": 0})
-            counts["ok" if trace.get("outcome") == "ok" else "failed"] += 1
             
     
     def _emit_selection(self, participant: str, selection: list):

@@ -455,9 +455,6 @@ def handle_agent_trace(payload):
     if not client or client['kind'] != 'agent':
         return
 
-    session = SESSIONS.get(client["room"])
-    if session:
-        session.on_trace(cliend["id"], payload)
 
     event_log.record(client['room'], 'agent_trace',
                      sender=client['id'], kind='agent',

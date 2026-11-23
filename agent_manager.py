@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from config import AgentSettings, load_condition
+from config import AgentSettings, load_condition, ModelRegistry
 from tasks import Task
 
 from aiohttp import web
@@ -18,6 +18,8 @@ from agent import Agent
 
 _ = load_dotenv()
 
+
+LIMITS = ModelRegistry().limits()
 
 DEFAULT_CONDITION = os.environ.get("CONDITION", "pilot")
 DEFAULT_TASK = os.environ.get("TASK", "common_lines")

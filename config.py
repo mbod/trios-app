@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, Strict
 
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
 NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -110,3 +110,16 @@ def load_condition(name: str) -> Condition:
 
     return Condition(name=name, **data)
 
+
+class ModelsFile(Strict):
+    provider_defaults: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    profiles: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    limits: dict[str, int] = Field(default_factory=dict)
+
+
+class ModelRegistry:
+    def __init__(self, path: Path = CONFIG_DIR / "models.yaml"):
+        f = ModelsFile(**(yaml.safe_load(path.read_text()) or {}))
+        self.defaults = f.provider_defaults
+        self.limits = f.limits
+        self.profiles = {name: self._build(spec) for name, spec in f.profiles.items()}
