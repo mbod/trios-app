@@ -191,7 +191,8 @@ class MatchingEngine(TaskEngine):
         return f"/stimuli/{self.task.defn.name}/{self.stimuli_name}/{figure}.{ext}"
 
     def view(self, p):
-        base = {"participant": p, "grid": list(self.rules.grid)}
+        base = {"participant": p, "grid": list(self.rules.grid),
+                "director": self.director, "figures": len(self.figures)}
         if p == self.director:
             return {**base, "role": "director",
                     "target": [self.url(f) for f in self.target]}
