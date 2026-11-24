@@ -20,10 +20,6 @@ x-app: &app
 
 services:
   app:
-    environment:
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      SECRET_KEY: ${SECRET_KEY}
-  
     <<: *app
     # One worker: all session state is in this process's memory.
     # Threads: one per WebSocket connection (humans, agents, observers) plus sessions.
@@ -31,6 +27,9 @@ services:
     environment:
       AGENT_MANAGER_URL: http://agents:5556
       LOG_DIR: /data/logs
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+
     ports:
       - "127.0.0.1:5555:5555"        # only reachable from the VM itself (nginx)
     volumes:
