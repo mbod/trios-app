@@ -265,15 +265,12 @@ def list_agents():
         
 
 # serve stimuli
-@app.route('/stimuli/<task>/<stim_set>/<round_id>/<filename>')
-def stimulus_file(task, stim_set, round_id, filename):
-    if not all(NAME_PATTERN.match(part) for part in (task, stim_set, round_id)):
+@app.route("/stimuli/<task>/<path:subpath>")
+def stimulus_file(task, subpath):
+    print(task, subpath)
+    if not NAME_PATTERN.match(task) or Path(subpath).suffix not in (".svg", ".png"):
         abort(404)
-
-    if Path(filename).suffix.lower() not in STIMULUS_FILE_TYES:
-        abort(404)
-
-    return send_from_directory(TASK_DIR / task / "stimuli" / stim_set / round_id, filename)
+    return send_from_directory(TASK_DIR / task / "stimuli", subpath)
 
 
 # ----- ADMIN routes and functions -------

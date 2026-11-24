@@ -73,7 +73,10 @@ class Session:
         seed = self.condition.seed
         self.order = self.engine.plan_rounds(
             random.Random(f"{seed}-{self.id}" if seed is not None else None))
-            
+
+
+        if not self.order:
+            raise ValueError(f"no rounds planned for {self.task.defn.name}/{stimuli_name}")
         
         if set(self.condition.participants) != set(self.task.defn.participants):
             raise ValueError(f"condition {self.condition.name} has participants "

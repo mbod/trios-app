@@ -1,0 +1,27 @@
+description: Pilot with three different models
+seed: 42
+
+participants:
+  A:
+    model: openai:gpt-6-luna
+    model_settings:
+       reasoning_effort: low
+    silence_chance: 0.45
+    max_words: 12
+    typing_wpm: null
+    cooldown_after_reply: [0,2]
+    perception: image
+
+  B:
+    model: anthropic:claude-haiku-5-5
+    max_words: 12
+    typing_wpm: null
+    cooldown_after_reply: [0,2]
+    perception: image
+
+  C:
+    model: google_genai:gemini-3.5-flash-lite
+    max_words: 12
+    typing_wpm: null
+    cooldown_after_reply: [0,2]
+    perception: image

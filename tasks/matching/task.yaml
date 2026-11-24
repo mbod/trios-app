@@ -1,0 +1,16 @@
+name: matching
+description: A director describes a target grid; matchers rebuild it from a pool of figures.
+participants: [A, B, C]
+engine: matching
+materials: svg
+actions:
+  say: say something in the chat
+  wait: wait silently
+  task_complete: signal that your grid is finished
+  withdraw: take back your done signal
+rules:
+  rounds: 6
+  require_answer: false
+  grid: [3, 3]
+  director: A
+  trial_end: all_done

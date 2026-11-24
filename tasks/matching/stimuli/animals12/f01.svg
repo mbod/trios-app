@@ -1,0 +1,13 @@
+
+<svg xmlns="http://www.w3.org/2000/svg"  
+    width="400" height="400">
+     <g>
+         <path fill="#202020" d="M 100 93 L 32 161 L 99 227 Z"/>
+  <path fill="#202020" d="M 258 93 L 258 141 L 308 141 Z"/>
+  <path fill="#202020" d="M 101 188 L 199 92 L 101 92 Z"/>
+  <path fill="#202020" d="M 60 191 L 60 238 L 109 238 Z"/>
+  <path fill="#202020" d="M 201 93 L 131 161 L 201 162 Z"/>
+  <path fill="#202020" d="M 202 92 L 202 142 L 257 141 L 257 92 Z"/>
+  <path fill="#202020" d="M 151 163 L 199 211 L 250 211 L 202 163 Z"/>
+     </g>
+</svg>

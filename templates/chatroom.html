@@ -33,6 +33,8 @@
 
     {% if participants|length==1 %}
 
+    <div id="task-board" hidden></div>
+
     <div id="done-panel" hidden>
       <div id="answer-prompt"></div>
       <div id="answer-options"></div>
@@ -143,18 +145,23 @@
         limitChoices();
       }
 
+
       function resetDonePanel(done) {
         const box = document.getElementById('answer-options');
         box.replaceChildren();
-        setText('answer-prompt', `When your group agrees, choose ${answerFormat.choose}:`);
-        for (const [id, label] of Object.entries(answerFormat.options)) {
-          const lab = document.createElement('label');
-          const cb = document.createElement('input');
-          cb.type = 'checkbox';
-          cb.value = id;
-          cb.addEventListener('change', limitChoices);
-          lab.append(cb, ' ' + label);
-          box.appendChild(lab);
+        if (answerFormat) {
+          setText('answer-prompt', `When your group agrees, choose ${answerFormat.choose}:`);
+          for (const [id, label] of Object.entries(answerFormat.options)) {
+            const lab = document.createElement('label');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = id;
+            cb.addEventListener('change', limitChoices);
+            lab.append(cb, ' ' + label);
+            box.appendChild(lab);
+          }
+        } else {
+          setText('answer-prompt', '');
         }
         setDoneButton(Boolean(done));
         document.getElementById('done-panel').hidden = false;
@@ -166,13 +173,111 @@
           socketio.emit('task_complete', { done: false });
           return;
         }
-        const answer = chosen();
+	if (!answerFormat) { socketio.emit('task_complete', {done: true}); return; }
+
+	const answer = chosen();
         if (answer.length !== answerFormat.choose) {
           notice(`Please choose ${answerFormat.choose} options first.`);
           return;
         }
         socketio.emit('task_complete', { done: true, answer: answer });
       });
+
+
+      /* ---- TASK BOARD (matching) ---- */
+      let boardView = null;
+      let heldCard = null;            // card picked up, waiting to be placed
+
+      function place(card, slot) {
+        heldCard = null;
+        socketio.emit('task_action', { type: 'place', card: card, slot: slot });
+      }
+
+      function img(url, cls) {
+        const el = document.createElement('img');
+        el.src = url;
+        if (cls) el.className = cls;
+        return el;
+      }
+
+      function slotEl(n, url) {
+        const el = document.createElement('div');
+        el.className = 'tb-slot';
+        const num = document.createElement('span');
+        num.className = 'tb-num';
+        num.textContent = n;
+        if (url) el.appendChild(img(url));
+        el.appendChild(num);
+        return el;
+      }
+
+      function label(text) {
+        const el = document.createElement('div');
+        el.className = 'tb-label';
+        el.textContent = text;
+        return el;
+      }
+
+      function renderBoard(v) {
+        boardView = v;
+        const board = document.getElementById('task-board');
+        board.replaceChildren();
+        board.hidden = false;
+        document.querySelectorAll('.stimImage').forEach(d => d.hidden = true);
+
+        const [rows, cols] = v.grid;
+        const grid = document.createElement('div');
+        grid.className = 'tb-grid';
+        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+        if (v.role === 'director') {
+          v.target.forEach((url, i) => grid.appendChild(slotEl(i + 1, url)));
+          board.append(label('Target'), grid);
+          document.getElementById('done-panel').hidden = true;
+          return;
+        }
+
+        v.slots.forEach((card, i) => {
+          const el = slotEl(i + 1, card ? v.cards[card] : null);
+          if (card && card === heldCard) el.classList.add('tb-selected');
+          el.addEventListener('click', () => {
+            if (!inRound || iAmDone) return;
+            if (heldCard && heldCard !== card) place(heldCard, i + 1);
+            else if (card) { heldCard = (heldCard === card) ? null : card; renderBoard(boardView); }
+          });
+          grid.appendChild(el);
+        });
+
+        const pool = document.createElement('div');
+        pool.className = 'tb-pool';
+        pool.addEventListener('click', (e) => {        // put a placed card back
+          if (e.target === pool && heldCard && v.slots.includes(heldCard)) place(heldCard, null);
+        });
+        v.pool.forEach(card => {
+          const c = img(v.cards[card], 'tb-card' + (card === heldCard ? ' tb-selected' : ''));
+          c.addEventListener('click', () => {
+            if (!inRound || iAmDone) return;
+            heldCard = (heldCard === card) ? null : card;
+            renderBoard(boardView);
+          });
+          pool.appendChild(c);
+        });
+
+        board.append(label('Your grid'), grid, label('Cards'), pool);
+      }
+
+      function clearBoard() {
+        boardView = null;
+        heldCard = null;
+        const board = document.getElementById('task-board');
+        board.replaceChildren();
+        board.hidden = true;
+      }
+
+      socketio.on('task_view', renderBoard);
+      socketio.on('action_error', (e) => notice(e.error));
+
+
 
       
       
@@ -360,7 +465,8 @@
 	  showStatus(statuses);
 	  startTimer(secondsLeft);
 	  notice('');
-	  if (isParticipant) resetDonePanel(statuses[from]);
+
+      	  if (isParticipant) resetDonePanel(statuses[from]);
       }
 
       socketio.on('session_start', (data) => {
@@ -374,6 +480,7 @@
 
 	  answerFormat = s.answer_format;
 	  if (s.round != null) {
+	      if (isParticipant && s.view) renderBoard(s.view);
 	      enterRound(s.round, s.rounds, s.materials, s.status, s.seconds_left);
 	  } else {
 	      setText('round-info', 'Waiting for the next round');
@@ -406,7 +513,11 @@
 	  addDivider(`Round ${data.round} ended: ${END_REASONS[data.reason] || data.reason}`);
 	  setText('round-info', 'Waiting for the next round');
 	  notice('');
-	  if (isParticipant) document.getElementById('done-panel').hidden = true;
+	  if (isParticipant) {
+	      document.getElementById('done-panel').hidden = true;
+	      clearBoard();
+	  }
+	  
       });
 
       socketio.on('session_end', () => {

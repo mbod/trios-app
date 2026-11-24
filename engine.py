@@ -101,7 +101,8 @@ class ChoiceEngine(TaskEngine):
                 raise ValueError(f"{self.rules.rounds} rounds requested; "
                                  f"{self.stimuli_name} has {len(order)}")
             order = order[:self.rules.rounds]
-            
+
+        return order
     
     def materials(self):
         return {p: self.task.material_url(self.stimuli_name, self.round_id, p)

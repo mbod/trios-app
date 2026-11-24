@@ -1,0 +1,7 @@
+
+
+limits:             # concurrent calls per provider
+   openai: 20
+   anthroopic: 10
+   google_genai: 10
+   ollama: 2
