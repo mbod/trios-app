@@ -411,7 +411,7 @@ def handle_connect(auth):
     connected_clients[sid] = identity
 
     if (session := SESSIONS.get(room)):
-        emit('session_state', session.public_state())
+        emit('session_state', session.public_state(identity['id']))
     
 @socketio.on('disconnect')
 def handle_disconnect(reason=None):
@@ -434,6 +434,9 @@ def handle_message(payload):
     if not client:
         return
 
+    payload = payload or {}
+    text = str(payload.get('message','')).strip()
+    
     session = SESSIONS.get(client["room"])
     if session and not session.round_open():
         event_log.record(client["room"], "message_rejected", sender=client["id"],
@@ -442,8 +445,6 @@ def handle_message(payload):
         return
     
 
-    payload = payload or {}
-    text = str(payload.get('message','')).strip()
 
     if not text:
         return
@@ -486,7 +487,7 @@ def handle_type(payload):
     if state not in ('start', 'stop'):
         return
 
-    sender = payload['from']
+    sender = client['id']
 
     event_log.record(client['room'], 'typing',
                      sender=sender, kind=client['kind'],
@@ -514,6 +515,17 @@ def handle_begin_task(payload):
     pass
 
 
+
+@socketio.on("task_action")
+def handle_task_action(data):
+    client = participant(request.sid)
+    session = SESSIONS.get(client["room"]) if client else None
+    if not session:
+        return
+    error = session.on_action(client["id"], client["kind"], data or {})
+    if error:
+        emit("action_error", {"error": error})
+        
 
 
 @socketio.on("task_complete")

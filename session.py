@@ -63,16 +63,23 @@ class Session:
         self.task = Task(task_name)
         self.stimuli_name = stimuli_name
         self.stimuli = self.task.stimuli(stimuli_name)
-        self.engine = ENGINES[self.task.defn.engine](self.task, stimuli_name, self.stimuli)
-        
+
         self.rules = Rules(**{**self.task.defn.rules.model_dump(),
                               **self.condition.rules,
                               **overrides})
+
+
+        self.engine = ENGINES[self.task.defn.engine](self.task, stimuli_name, self.stimuli, self.rules)
+        seed = self.condition.seed
+        self.order = self.engine.plan_rounds(
+            random.Random(f"{seed}-{self.id}" if seed is not None else None))
+            
+        
         if set(self.condition.participants) != set(self.task.defn.participants):
             raise ValueError(f"condition {self.condition.name} has participants "
                              f"{sorted(self.condition.participants)}; task {task_name} "
                              f"needs {sorted(self.task.defn.participants)}")
-        self.order = self._plan_rounds()
+    
 
         
         # state of current round
@@ -128,7 +135,7 @@ class Session:
         self.socketio.emit("session_start",
                            {"session_id": self.id,
                             "rounds": len(self.order),
-                            "answer_format": self.task.defn.answer.model_dump(),
+                            "answer_format": self.task.defn.answer.model_dump() if self.task.defn.answer else None,
                             "participants": list(self.condition.participants),
                             "code": code_version()
                            }, to=self.room)
@@ -181,6 +188,10 @@ class Session:
         rng = random.Random(f"{seed}-{self.id}-{number}" if seed is not None else None)
         self.engine.setup_round(number, round_id, list(self.condition.participants), rng)
         materials = self.engine.materials()
+        payload = {"round": number, "round_id": round_id, "materials": materials,
+                   **self.engine.setup_log()}
+        
+
         
         with self.lock:
             self.round_no = number
@@ -206,6 +217,9 @@ class Session:
             "seq": event["seq"]
             },
             to=self.room)
+
+        for p in self.condition.participants:
+            self._send_view(p, self.engine.view(p))
 
         started =  self.round_started_at
         warned = False
@@ -247,13 +261,8 @@ class Session:
 
 
     def _all_done(self) -> bool:
-        if not all(s["done"] for s in self.status.values()):
-            return False
-
-        if self.rules.require_agreement:
-            return len({frozenset(s["answer"] or []) for s in self.status.values()}) == 1
-
-        return True
+            return self.engine.round_complete(self.status)
+        
 
 
     def _time_to_warn(self, elapsed: float) -> bool:
@@ -292,6 +301,58 @@ class Session:
         with self.lock:
             return self.round_no is not None
 
+
+    def on_action(self, participant: str, kind: str, action) -> str | None:
+        """
+        A participant's task action (e.g. placing a card)
+        Returns error message for the participant or None
+        """
+        with self.lock:
+            if self.round_no is None:
+                return "no round in progress"
+            if participant not in self.status:
+                return "not a participant in this session"
+            if not isinstance(action, dict):
+                return "invalid action"
+            try:
+                result = self.engine.apply(participant, action)
+            except ValueError as e:
+                return str(e)
+            withdrew = self.status[participant]["done"]
+            if withdrew:
+                self.status[participant] = {"done": False, "answer": None}
+            view = self.engine.view(participant)
+
+        self.log.record(self.room, "task_action",
+                        sender=participant,
+                        kind=kind,
+                        payload=result)
+
+        if withdrew:
+            self.log.record(self.room, "participant_status",
+                            sender=participant,
+                            kind=kind,
+                            payload={"done": False, "answer": None, "cause": "board_change"})
+            self.socketio.emit("participant_status",
+                               {"participant": participant, "done": False}, to=self.room)
+
+        self._send_view(participant, view)
+        return None
+
+
+    def _send_view(self, participant: str, view: dict):
+        """
+        A participant's private view: to them and to observers only
+        """
+        if not view:
+            return
+
+        for sid, c in list(self.clients.items()):
+            if c["room"] == self.room and (c["id"] == participant or c["kind"] == "observer"):
+                self.socketio.emit("task_view", view, to=sid)
+                
+                                                
+            
     # --- agents -----------------------
 
     def _start_agents(self):
@@ -389,6 +450,9 @@ class Session:
         """A participant changes their current selection (a partial answer is fine).
         Returns an error message for the participant, or None."""
         spec = self.task.defn.answer
+        if spec is None:
+            return "this task has no answer option"
+        
         with self.lock:
             if self.round_no is None:
                 return "no round in progress"
@@ -433,7 +497,7 @@ class Session:
 
     
 
-    def public_state(self) -> dict:
+    def public_state(self, participant: str | None = None) -> dict:
         """
         What a page needs when it connects
         (doesn't include answers)
@@ -442,7 +506,7 @@ class Session:
             state = {
                 "session_id": self.id,
                 "rounds": len(self.order),
-                "answer_format": self.task.defn.answer.model_dump(),
+                "answer_format": self.task.defn.answer.model_dump() if self.task.defn.answer else None,
                 "participants": list(self.condition.participants),
                 "round": self.round_no,
                 "status": {p: s["done"] for p, s in self.status.items()}
@@ -453,12 +517,18 @@ class Session:
                     None if self.rules.time_limit is None else
                     max(0, round(self.rules.time_limit - (time.monotonic() - self.round_started_at))))
 
+            if participant:
+                state["view"] = self.engine.view(participant)
+                
         return state
      
     
 
     def _check_answer(self, answer) -> str | None:
         spec = self.task.defn.answer
+        if spec is None:
+            return "this task has no answer option"
+
         if (not isinstance(answer, list) or len(set(answer)) != spec.choose
             or not set(answer) <= spec.options.keys()):
             return f"choose {spec.choose} different options"

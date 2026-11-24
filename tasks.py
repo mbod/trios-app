@@ -43,15 +43,18 @@ class Rules(BaseModel):
     require_answer: bool = True
     require_agreement: bool = False
     selection_visibility: Literal["private", "on_done", "live"] = "private"
-    
+
+    grid: tuple[int, int] = (3,3)
+    director: str = "A"
+    trial_end: Literal["all_done", "first_done"] = "all_done"
     
 class StimulusSet(BaseModel):
     model_config = ConfigDict(extra="forbid")
     description: str = ""
     framing: str = ""
-    rounds: dict[str, list[str]]
-    
-    
+    rounds: dict[str, list[str]] = {}
+    figures: list[str] = []
+
 
 
 class TaskDef(BaseModel):
@@ -63,35 +66,48 @@ class TaskDef(BaseModel):
     prompts: dict[str, str] = {}
     materials_name: Literal["picture", "points table"] = "picture"
     materials: Literal["svg", "html"] = "html"
-    answer: AnswerSpec
+    answer: AnswerSpec | None = None
     rules: Rules = Field(default_factory=Rules)
-    engine: Literal["choice"] = "choice"
+    engine: Literal["choice", "matching"] = "choice"
 
+
+    
     @model_validator(mode="after")
     def check_required(self):
         if missing := REQUIRED_ACTIONS - self.actions.keys():
             raise ValueError(f"task {self.name} is missing actions: {sorted(missing)}")
 
+        if self.engine == "choice" and self.answer is None:
+            raise ValueError(f"task {self.name} needs an 'answer' section")
+        
         return self
 
 
-def make_turn_action(actions: dict[str,str], answer: "AnswerSpec"):
+def make_turn_action(actions: dict[str,str], answer: "AnswerSpec | None"):
     """
     Build the TurnAction output schema from the task's actions and answer format
     """
-    option_ids = tuple(answer.options)
-    options_text = "; ".join(f"{k} = {label}" for k, label in answer.options.items())
 
+    fields = {
+        "current_action": (Literal[tuple(actions)], Field(description="the action to take")),
+        "message": (str, Field(default="", description=(
+            "the chat message to send; it can accompany task_complete or withdraw. "
+            "Leave empty to send nothing"))),
+    }
+
+    
+
+    if answer is not None:
+        option_ids = tuple(answer.options)
+        options_text = "; ".join(f"{k} = {label}" for k, label in answer.options.items())
+        fields["answer"] = (list[Literal[option_ids]] | None, Field(default=None, description=(
+            f"only with task_complete: your group's answer, {answer.choose} different "
+            f"options from: {options_text}")))
+        
     return create_model(
         "TurnAction",
         __doc__="What to do on this turn",
-        current_action=(Literal[tuple(actions)], Field(description="the action to take")),
-        message=(str, Field(default="", description=(
-            "the chat message to send; it can accompany task_complete or withdraw"
-            "Leave empty to send nothing"))),
-        answer=(list[Literal[option_ids]] | None, Field(default=None, description=(
-            f"only with task_complete: your group's answer, {answer.choose} different "
-            f"options from: {options_text}"))),
+        **fields
     )
 
 
@@ -140,6 +156,21 @@ class Task:
         with open(path) as f:
             stim = StimulusSet(**(yaml.safe_load(f) or {}))
 
+            # if task uses a matching engine check correct number of figures
+            if self.defn.engine == "matching":
+                if len(stim.figures) < 2 or len(set(stim.figures)) != len(stim.figures):
+                    raise ValueError(f"{set_name}: 'figures' must list at least 2 different figures")
+                
+                # check that listed figures exist
+                for fig in stim.figures:
+                    path = folder / f"{fig}.{self.defn.materials}"
+                    if not NAME_PATTERN.match(fig) or not (path.is_file() or path.with_suffix(".png").is_file()):
+                        raise ValueError(f"{set_name}: bad name or missing file for figure '{fig}'")
+
+                return stim
+                    
+                    
+            
         spec = self.defn.answer
         for round_id, answer in stim.rounds.items():
             if not NAME_PATTERN.match(round_id):
