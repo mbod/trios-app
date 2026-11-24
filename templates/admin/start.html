@@ -1,0 +1,20 @@
+<!doctype html>
+<title>Start session</title>
+<p><a href="{{ url_for('admin_sessions') }}">← Sessions</a></p>
+<h2>Start a session</h2>
+{% if error %}<p style="color:#b00">{{ error }}</p>{% endif %}
+<form method="post">
+  <p><label>Room <input name="room_id" value="{{ form.get('room_id', '') }}" required></label></p>
+  <p><label>Condition
+    <select name="condition" required>
+      {% for c in conditions %}
+      <option {% if form.get('condition') == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select></label></p>
+  <p><label>Task <input name="task" value="{{ form.get('task', '') }}" required></label></p>
+  <p><label>Stimuli <input name="stimuli" value="{{ form.get('stimuli', '') }}" required></label></p>
+  <p><label>Number of rounds <input name="rounds" value="{{ form.get('rounds', '')}}"></label></p>
+  <p><label>Group ID <input name="group_id" value="{{ form.get('group_id', '') }}"></label></p>
+  <p><label>Notes <input name="notes" value="{{ form.get('notes', '') }}" size="50"></label></p>
+  <button>Start</button>
+</form>

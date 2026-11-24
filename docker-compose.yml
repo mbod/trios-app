@@ -20,6 +20,10 @@ x-app: &app
 
 services:
   app:
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+  
     <<: *app
     # One worker: all session state is in this process's memory.
     # Threads: one per WebSocket connection (humans, agents, observers) plus sessions.
@@ -36,7 +40,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
+      
   agents:
     <<: *app
     command: python agent_manager.py

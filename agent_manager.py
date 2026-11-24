@@ -19,7 +19,7 @@ from agent import Agent
 _ = load_dotenv()
 
 
-LIMITS = ModelRegistry().limits()
+LIMITS = ModelRegistry().limits
 
 DEFAULT_CONDITION = os.environ.get("CONDITION", "pilot")
 DEFAULT_TASK = os.environ.get("TASK", "common_lines")
@@ -101,7 +101,7 @@ async def start_agent_handler(request):
             id=agent_id, room=room_id,
             ws_url=BASE_WS_URL, socketio_path=SOCKETIO_PATH,
             task=task, settings=settings, seed=cond.seed,
-            limits = registry.limits
+            limits = LIMITS
         )
     except (FileNotFoundError, ValueError, ValidationError) as e:
         return web.json_response({

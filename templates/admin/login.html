@@ -1,0 +1,7 @@
+<!doctype html>
+<title>Trios App admin</title>
+<form method="post">
+  <input type="password" name="password" placeholder="Admin password" autofocus>
+  <button>Log in</button>
+  {% if error %}<p style="color:#b00">{{ error }}</p>{% endif %}
+</form>

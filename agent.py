@@ -7,6 +7,7 @@ Two parts:
 """
 
 import asyncio
+import base64
 import hashlib
 import logging
 import random
@@ -17,7 +18,7 @@ import socketio
 from pydantic import BaseModel, Field
 
 from config import AgentSettings
-from llm import build_chat_model, structured
+from llm import build_chat_model, structured, provider_slot
 from tasks import Task
 
 LOG = logging.getLogger(__name__)
@@ -112,6 +113,11 @@ class Agent:
         self._loop_task = None
         self._trace_tasks = set()
 
+        # image and materials
+        self.materials_message = None
+        self.image_file = None
+
+        
         self.register_handlers()
         LOG.info(f"Agent {id}: {settings.model}, {settings.turn_taking}")
 
@@ -201,7 +207,27 @@ class Agent:
     def start_round(self, data):
 
         # get stimuli for participant
-        image = self.task.material_path(data["stimuli"], data["round_id"], self.id).read_text()
+        #image = self.task.material_path(data["stimuli"], data["round_id"], self.id).read_text()
+
+        path = self.task.material_path(data["stimuli"], data["round_id"], self.id)
+        if self.settings.perception == "image":
+            png = path.with_suffix(".png").read_bytes()
+            image = ""
+            self.materials_message = {"role": "user",
+                                      "content": [
+                                          {"type": "text", "text": "Your picture for this round:"},
+                                          {"type": "image_url", "image_url": {
+                                              "url": "data:image/png;base64," + base64.b64encode(png).decode()}}
+                                      ]}
+            self.image_file = {"file": path.with_suffix(".png").name,
+                               "sha256": hashlib.sha256(png).hexdigest()[:12]}
+        else:
+            image = path.read_text()
+            self.materials_message = None
+            self.image_file = None
+                                          
+
+        
         others = [p for p in data["participants"] if p != self.id]
 
         # build system prompt for participant in task
@@ -286,7 +312,7 @@ class Agent:
     def render_prompt(self):
         self.prompt = self.task.render(
             "system", materials=self.image, self_description=self.self_description,
-            max_words=self.settings.max_words,
+            max_words=self.settings.max_words, perception=self.settings.perception,
             **self.task.prompt_context(self.stimuli_name, self.id))
 
 
@@ -475,9 +501,12 @@ class Agent:
         base = {"stage": stage, "context_seq": self.last_seq,
                 "history_len": len(self.history), "instruction": instruction,
                 "turn_id": turn_id}
+        
         messages = [{"role": "system", "content": self.prompt},
+                    *([self.materials_message] if self.materials_message else []),
                     *(self.history if use_history else []),
                     {"role": "user", "content": instruction}]
+
         deadline = time.monotonic() + RETRY_BUDGET_S
         slot = provider_slot(self.settings.provider, self.limits)
         ms = lambda since: int((time.monotonic() - since) * 1000)
@@ -571,7 +600,7 @@ class Agent:
     def _trace_system_prompt(self):
         self.trace(stage="system_prompt", outcome="ok",
                     prompt_sha256=hashlib.sha256(self.prompt.encode()).hexdigest(),
-                    prompt=self.prompt)
+                    prompt=self.prompt, image=self.image_file)
 
     def _loop_stopped(self, task):
         if not task.cancelled() and task.exception():
@@ -598,7 +627,25 @@ class Agent:
         finally:
             await self._emit_typing("stop")
         return seconds
-            
+
+
+
+    def render_decide(self, trigger) -> str:
+        return self.task.render("decide",
+                                participant=self.id,
+                                last_sender=trigger.sender,
+                                last_message=trigger.text,
+                                typing_note=self.typing_note(),
+                                status_note=self.status_note())
+
+    def render_turn(self, silence: bool) -> str:
+        return self.task.render("turn",
+                                situation=self.task.render("silence") if silence else "",
+                                typing_note=self.typing_note(),
+                                status_note=self.status_note(),
+                                max_words=self.settings.max_words)
+
+
 
     # --- running --------------------------------------------------------------
 

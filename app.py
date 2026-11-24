@@ -9,11 +9,17 @@
 import os
 import re
 import hmac
+import threading
 from dotenv import load_dotenv
 from flask_socketio import SocketIO, join_room, leave_room, emit
 from event_log import EventLog
-
-from flask import Flask, request, render_template, session, jsonify, abort, send_from_directory
+from functools import wraps
+from flask import (
+    Flask, request, render_template, session,
+    jsonify, abort, send_from_directory,
+    redirect, url_for, flash
+    )
+from flask import session as flask_session
 from werkzeug.middleware.proxy_fix import ProxyFix 
 
 from datetime import datetime
@@ -23,13 +29,15 @@ import requests
 from pathlib import Path
 from pydantic import ValidationError
 
-from config import NAME_PATTERN
+from config import NAME_PATTERN, list_conditions
 from tasks import TASK_DIR
 from session import SESSIONS, Session
 
 _ = load_dotenv()
 
 
+
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
 ROOM_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -41,12 +49,15 @@ STIMULUS_FILE_TYES = {".svg", ".png", ".jpg", ".txt"}
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['FLASK_SECRET_KEY']
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get("SECURE_COOKIES") == "1"
+app.config['SESSION_COOKIE_SAMESITE'] = "Lax"
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN')
 AGENT_TOKEN = os.environ['AGENT_TOKEN']
 AGENT_MANAGER_URL = os.environ.get("AGENT_MANAGER_URL", "http://127.0.0.1:5556")
 
+
+START_LOCK = threading.Lock()
 
 event_log = EventLog(os.environ.get('LOG_DIR', 'logs'))
 
@@ -77,15 +88,6 @@ connected_clients = {}
 # agents = {}
 
 
-
-def require_admin():
-    """
-    Request most carry the admin token
-    """
-    token = request.args.get("token") or request.headers.get("X-Admin-Token","")
-    if not ADMIN_TOKEN or not hmac.compare_digest(token, ADMIN_TOKEN):
-        return jsonify({"error": "admin token required"}), 403
-    return None
 
 
 # --- app routes --------------------------------------------------
@@ -119,10 +121,47 @@ def chatroom(room_id):
 
 
 
-@app.route('/')
-def create_room():
 
-    return render_template('create_room.html')
+def create_session(room_id: str, params) -> tuple[dict, int]:
+    """
+    Validate and start a session. Used by /start_session and admin form
+    """
+    if not ROOM_PATTERN.match(room_id):
+        return {"error": "invalid room id"}, 400
+    with START_LOCK:
+        if room_id in SESSIONS or event_log.active_session(room_id):
+            return {"error": f"a session is already running in room {room_id}"}, 409
+
+        session_id = params.get("session_id") or f"{room_id}-{datetime.now():%Y%m%d-%H%M%S}"
+        if not ID_PATTERN.match(session_id):
+            return {"error": "invalid session id"}, 400
+        if event_log.session_exists(session_id):
+            return {"error": f"session {session_id} already has a log file"}, 409
+
+        try:
+            overrides = {}
+            if params.get("rounds"):
+                overrides["rounds"] = int(params["rounds"])
+            if params.get("time_limit"):
+                overrides["time_limit"] = None if params["time_limit"]== "none" else float(params["time_limit"])
+            meta = {k : params[k] for k in ("group_id", "notes") if params.get(k)}
+            session = Session(socketio, event_log, connected_clients, room_id, session_id,
+                              params.get("condition",""),
+                              params.get("task",""),
+                              params.get("stimuli", ""),
+                              overrides, meta)
+        except (ValueError, ValidationError, FileNotFoundError) as e:
+            return {"error": str(e)}, 400
+
+        if (missing := session.missing_humans()):
+            return {"error": f"waiting for human participants: {missing}"}, 409
+
+
+        SESSIONS[room_id] = session
+
+    session.start()
+    return {"session_id": session_id, "round_order": session.order}, 200
+
 
 
 
@@ -131,37 +170,8 @@ def create_room():
 def start_session(room_id):
     if (denied := require_admin()):
         return denied
-    args = request.args
-    if not ROOM_PATTERN.match(room_id):
-        return jsonify({"error": "invalid room id"}), 400
-    if room_id in SESSIONS or event_log.active_session(room_id):
-        return jsonify({"error": f"a session is already running in room {room_id}"}), 409
-
-    session_id = args.get("session_id") or f"{room_id}-{datetime.now():%Y%m%d-%H%M%S}"
-    if not ID_PATTERN.match(session_id):
-        return jsonify({"error": "invalid session id"}), 400
-    if event_log.session_exists(session_id):
-        return jsonify({"error": f"session {session_id} already has a log file"}), 409
-
-    try:
-        overrides = {}
-        if "rounds" in args:
-            overrides["rounds"] = int(args["rounds"])
-        if "time_limit" in args:
-            overrides["time_limit"] = None if args["time_limit"] == "none" else float(args["time_limit"])
-        meta = {k: args[k] for k in ("group_id", "notes") if args.get(k)}
-        session = Session(socketio, event_log, connected_clients, room_id, session_id,
-                          args.get("condition", ""), args.get("task", ""),
-                          args.get("stimuli", ""), overrides, meta)
-    except (ValueError, ValidationError, FileNotFoundError) as e:
-        return jsonify({"error": str(e)}), 400
-
-    if (missing := session.missing_humans()):
-        return jsonify({"error": f"waiting for human participants: {missing}"}), 409
-
-    SESSIONS[room_id] = session
-    session.start()
-    return jsonify({"session_id": session_id, "round_order": session.order})
+    result, status = create_session(room_id, request.args)
+    return jsonify(result), status
 
 
 
@@ -264,7 +274,92 @@ def stimulus_file(task, stim_set, round_id, filename):
         abort(404)
 
     return send_from_directory(TASK_DIR / task / "stimuli" / stim_set / round_id, filename)
+
+
+# ----- ADMIN routes and functions -------
+
+
+def require_admin():
+    """
+    Request most carry the admin token
+    """
+
+    if flask_session.get("admin"):
+        return None
     
+    token = request.args.get("token") or request.headers.get("X-Admin-Token","")
+    if not ADMIN_TOKEN or not hmac.compare_digest(token, ADMIN_TOKEN):
+        return jsonify({"error": "admin token required"}), 403
+    return None
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not flask_session.get('admin'):
+            return redirect(url_for("admin_login", next=request.path))
+        return view(*args, **kwargs)
+    return wrapped
+
+@app.route('/admin/login', methods=['GET','POST'])
+def admin_login():
+    if not ADMIN_PASSWORD:
+        abort(503, "Admin is diasbled: ADMIN_PASSWORD not set")
+    error = None
+    if request.method == "POST":
+        given = request.form.get("password","").encode()
+        if hmac.compare_digest(given, ADMIN_PASSWORD.encode()):
+            flask_session['admin'] = True
+            nxt = request.args.get('next', '')
+            return redirect(nxt if nxt.startswith("/admin") else url_for("admin_sessions"))
+        error = "Wrong password"
+    return render_template("admin/login.html", error=error)
+
+@app.route("/admin/logout")
+def admin_logout():
+    flask_session.pop("admin", None)
+    return redirect(url_for("admin_login"))
+
+
+@app.route('/admin')
+@admin_required
+def admin_sessions():
+    return render_template('admin/active_sessions.html',
+                           sessions = list(SESSIONS.values()))
+
+
+@app.route("/admin/start", methods=["GET", "POST"])
+@admin_required
+def admin_start():
+    error = None
+    if request.method == "POST":
+        result, status = create_session(request.form.get("room_id", ""), request.form)
+        if status == 200:
+            flash(f"Started {result['session_id']}")
+            return redirect(url_for("admin_sessions"))
+        error = result["error"]
+    return render_template("admin/start.html", error=error, form=request.form,
+                           conditions=list_conditions())
+
+
+@app.post("/admin/end_round/<room_id>")
+@admin_required
+def admin_end_round(room_id):
+    if (s := SESSIONS.get(room_id)):
+        s.request_end_round()
+        flash(f"Ending round in {room_id}")
+    return redirect(url_for("admin_sessions"))
+
+
+@app.post("/admin/end_session/<room_id>")
+@admin_required
+def admin_end_session(room_id):
+    if (s := SESSIONS.get(room_id)):
+        s.request_end_session()
+        flash(f"Ending session in {room_id}")
+    return redirect(url_for("admin_sessions"))
+
+
 
 # ----- SOCKETIO handlers -----------------------------------------
 
@@ -418,20 +513,6 @@ def handle_begin_task(payload):
     '''Signal that task has begin and participants can begin'''
     pass
 
-
-"""
-@socketio.on('task_complete')
-def handle_end_task(payload):
-    '''Handle participant signal that they think task is complete'''    
-    client = participant(request.sid)
-    if not client or not (session := SESSIONS.get(client['room'])):
-        return
-    payload = payload or {}
-    error = session.on_status(client['id'], client['kind'],
-                              done=payload.get('done', True),
-                              answer=payload.get('answer'))
-    if error:
-        emit('status_error', {'error': error})                                   """           
 
 
 

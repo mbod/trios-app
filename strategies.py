@@ -23,17 +23,15 @@ async def decide_then_act(agent, trigger):
     """
     Pause, decide whether to speak (one model call), then decide what to do (second call)
 
-    The behavior of the first pilot tests. Combined with `interrupt: cancel`,
     a new message abandons the turn in progress
     """
 
     if not agent.in_round:
         return
 
-    epoch = agent.in_round
+    epoch = agent.round_epoch
     turn_id = uuid4().hex[:8]
     
-    round_at_start = agent.round_no
 
     def still_current():
         return agent.in_round and agent.round_epoch == epoch
@@ -77,3 +75,17 @@ STRATEGIES = {
 }
     
     
+def render_decide(self, trigger) -> str:
+    return self.task.render("decide",
+                            participant=self.id,
+                            last_sender=trigger.sender,
+                            last_message=trigger.text,
+                            typing_note=self.typing_note(),
+                            status_note=self.status_note())
+
+def render_turn(self, silence: bool) -> str:
+    return self.task.render("turn",
+                            situation=self.task.render("silence") if silence else "",
+                            typing_note=self.typing_note(),
+                            status_note=self.status_note(),
+                            max_words=self.settings.max_words)
