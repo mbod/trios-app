@@ -65,7 +65,7 @@ class TaskDef(BaseModel):
     materials: Literal["svg", "html"] = "html"
     answer: AnswerSpec
     rules: Rules = Field(default_factory=Rules)
-    
+    engine: Literal["choice"] = "choice"
 
     @model_validator(mode="after")
     def check_required(self):
@@ -162,8 +162,13 @@ class Task:
 
 
     def material_url(self, set_name: str, round_id: str, participant: str) -> str:
-        return f"/stimuli/{self.defn.name}/{set_name}/{round_id}/{participant}.{self.defn.materials}"
-
+        name = f"{participant}.{self.defn.materials}"
+        if (self.defn.materials == "svg" and
+                self.material_path(set_name, round_id, participant).with_suffix(".png").is_file()):
+            name = f"{participant}.png"
+        return f"/stimuli/{self.defn.name}/{set_name}/{round_id}/{name}"
+        
+        
     def score(self, answer: list[str] | None, correct: list[str]) -> dict:
         if not answer:
             return {"answered": False, "correct": False, "overlap": 0}

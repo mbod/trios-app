@@ -24,6 +24,7 @@ import requests
 
 import hashlib
 
+from engine import ENGINES
 from config import load_condition
 from tasks import Rules, Task
 
@@ -62,6 +63,8 @@ class Session:
         self.task = Task(task_name)
         self.stimuli_name = stimuli_name
         self.stimuli = self.task.stimuli(stimuli_name)
+        self.engine = ENGINES[self.task.defn.engine](self.task, stimuli_name, self.stimuli)
+        
         self.rules = Rules(**{**self.task.defn.rules.model_dump(),
                               **self.condition.rules,
                               **overrides})
@@ -174,8 +177,10 @@ class Session:
             
     def _run_round(self, number: int, round_id: str):
 
-        materials = {p: self.task.material_url(self.stimuli_name, round_id, p)
-                     for p in self.condition.participants}
+        seed = self.condition.seed
+        rng = random.Random(f"{seed}-{self.id}-{number}" if seed is not None else None)
+        self.engine.setup_round(number, round_id, list(self.condition.participants), rng)
+        materials = self.engine.materials()
         
         with self.lock:
             self.round_no = number
@@ -258,11 +263,12 @@ class Session:
 
 
     def _end_round(self, number: int, round_id: str, reason: str, elapsed: float):
-        correct = self.stimuli.rounds[round_id]
+        correct = self.engine.correct()
         with self.lock:
-            results = {p: {**s, "selection": self.selection[p],
-                           **self.task.score(s["answer"], correct)}
-                       for p, s in self.status.items()}
+            scores = self.engine.score(self.status)
+            results = {p: {**s, "selection": self.selection[p], **scores[p]}
+                          for p, s in self.status.items()}
+
             answers = [s["answer"] for s in self.status.values()]
             agreed = all(answers) and len({frozenset(a) for a in answers}) == 1
             messages = self.messages_this_round
@@ -305,7 +311,7 @@ class Session:
             if set(self.condition.agent_ids) <= present:
                 return
             self.socketio.sleep(0.2)
-        return RuntimeError(f"agents did not connect within {AGENT_CONNECT_TIMEOUT_S}s")
+        raise RuntimeError(f"agents did not connect within {AGENT_CONNECT_TIMEOUT_S}s")
     
 
     def _stop_agents(self):
