@@ -58,7 +58,7 @@ class StimulusSet(BaseModel):
 
 class Placement(BaseModel):
     card: str = Field(description="the letter of one of your cards")
-    slot: int } None = Field(description="the slot number to put it in, or null to take it back")
+    slot: int | None = Field(description="the slot number to put it in, or null to take it back")
 
 class TaskDef(BaseModel):
     model_config = ConfigDict(extra="forbid")
