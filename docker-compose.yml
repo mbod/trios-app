@@ -28,8 +28,6 @@ services:
       AGENT_MANAGER_URL: http://agents:5556
       LOG_DIR: /data/logs
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      SECRET_KEY: ${FLASK_SECRET_KEY}
-
     ports:
       - "127.0.0.1:5555:5555"        # only reachable from the VM itself (nginx)
     volumes:
