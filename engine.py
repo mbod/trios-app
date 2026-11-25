@@ -191,6 +191,10 @@ class MatchingEngine(TaskEngine):
         return f"/stimuli/{self.task.defn.name}/{self.stimuli_name}/{figure}.{ext}"
 
     def view(self, p):
+
+        if not self.participants or p not in self.participants:
+            return {}
+        
         base = {"participant": p, "grid": list(self.rules.grid),
                 "director": self.director, "figures": len(self.figures)}
         if p == self.director:

@@ -86,7 +86,7 @@ class TaskDef(BaseModel):
         return self
 
 
-def make_turn_action(actions: dict[str,str], answer: "AnswerSpec | None"):
+def make_turn_action(actions: dict[str,str], answer: "AnswerSpec | None", placing: bool = False):
     """
     Build the TurnAction output schema from the task's actions and answer format
     """
@@ -106,6 +106,12 @@ def make_turn_action(actions: dict[str,str], answer: "AnswerSpec | None"):
         fields["answer"] = (list[Literal[option_ids]] | None, Field(default=None, description=(
             f"only with task_complete: your group's answer, {answer.choose} different "
             f"options from: {options_text}")))
+
+
+    if placing:
+        fields["places"] = (list[Placement], Field(default_factory=list, description=(
+            "matchers only: cards to place in your grid this turn, in order"
+            "Leave empty to place nothing")))
         
     return create_model(
         "TurnAction",
@@ -132,7 +138,8 @@ class Task:
             trim_blocks=True,
             lstrip_blocks=True
         )
-        self.TurnAction = make_turn_action(self.defn.actions, self.defn.answer)
+        self.TurnAction = make_turn_action(self.defn.actions, self.defn.answer,
+                                           placing=self.defn.engine == "matching")
 
         self.prompts = self.prompt_files()
 
@@ -140,7 +147,7 @@ class Task:
     def render(self, prompt: str, **variables) -> str:
         if prompt not in self.prompts:
             raise ValueError(f"task {self.defn.name} has no '{prompt}' prompt")
-        template = self.env.get_template(self.defn.prompts[prompt])
+        template = self.env.get_template(self.prompts[prompt])
         return template.render(task=self.defn, **variables).strip()
 
     

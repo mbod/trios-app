@@ -520,8 +520,8 @@ class Session:
                     None if self.rules.time_limit is None else
                     max(0, round(self.rules.time_limit - (time.monotonic() - self.round_started_at))))
 
-            if participant:
-                state["view"] = self.engine.view(participant)
+                if participant:
+                    state["view"] = self.engine.view(participant)
                 
         return state
      

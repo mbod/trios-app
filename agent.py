@@ -115,6 +115,7 @@ class Agent:
 
         # image and materials
         self.materials_message = None
+        self.view = None
         self.image_file = None
 
         
@@ -137,6 +138,7 @@ class Agent:
 
         @self.sio.on("round_end")
         async def on_round_end(data):
+            self.view = None
             self.in_round = False
             self.round_epoch += 1
             self._drain_triggers()
@@ -203,30 +205,57 @@ class Agent:
             self.trace(stage="status_error", outcome="rejected",
                        error=data.get('error'))
 
-    
+        @self.sio.on("task_view")
+        async def on_task_view(data):
+            if data.get("participant") != self.id or not self.in_round:
+                return
+
+            first = self.view is None
+            self.view = data
+
+            if first:
+                try:
+                    self.load_view_materials()
+                    self.render_prompt()
+                    self._trace_system_prompt()
+                    self.triggers.put_nowait(Trigger("round_start"))
+                except Exception as e:
+                    LOG.exception(f"{self.id}: loading view failed")
+                    self.trace(stage="error", outcome="view_failed",
+                               error=f"{type(e).__name__}: {e}"[:500])
+
+
+        @self.sio.on("action_error")
+        async def on_action_error(data):
+            self.note(f"Your card placement was not accepted: {data.get('error')}")
+            self.trace(stage="action_error", outcome="rejected", error=data.get("error"))
+
+             
     def start_round(self, data):
 
         # get stimuli for participant
         #image = self.task.material_path(data["stimuli"], data["round_id"], self.id).read_text()
 
-        path = self.task.material_path(data["stimuli"], data["round_id"], self.id)
-        if self.settings.perception == "image":
-            png = path.with_suffix(".png").read_bytes()
+        self.view = None
+        if self.task.defn.engine == "choice":
+            path = self.task.material_path(data["stimuli"], data["round_id"], self.id)
+            if self.settings.perception == "image":             # bitmap image stimuli (PNG)
+                png = path.with_suffix(".png").read_bytes()
+                image = ""
+                self.materials_message = {"role": "user", "content": [
+                    {"type": "text", "text": "Your picture for this round: "},
+                    {"type": "image_url", "image_url": {
+                        "url": "data:image/png;base64," + base64.b64encode(png).decode()}}]}
+                self.image_file = {"file": path.with_suffix(".png").name,
+                                   "sha256": hashlib.sha256(png).hexdigest()[:12]}
+            else:                                               # SVG stimuli 
+                image = path.read_text()
+                self.materials_message = None
+                self.image_file = None
+        else:                                 # matching task: materials provided from view of engine
             image = ""
-            self.materials_message = {"role": "user",
-                                      "content": [
-                                          {"type": "text", "text": "Your picture for this round:"},
-                                          {"type": "image_url", "image_url": {
-                                              "url": "data:image/png;base64," + base64.b64encode(png).decode()}}
-                                      ]}
-            self.image_file = {"file": path.with_suffix(".png").name,
-                               "sha256": hashlib.sha256(png).hexdigest()[:12]}
-        else:
-            image = path.read_text()
             self.materials_message = None
             self.image_file = None
-                                          
-
         
         others = [p for p in data["participants"] if p != self.id]
 
@@ -237,14 +266,19 @@ class Agent:
         self.self_description = ""
         self.stimuli_name = data["stimuli"]
         self.image = image
-        
-        self.render_prompt()
-        self._trace_system_prompt()
+
+        if self.task.defn.engine == "choice":         # only compile and render prompts for choice tasks
+            self.render_prompt()
+            self._trace_system_prompt()
 
         if self.settings.memory == "none":      # start each round with clear memory
             self.history = []
+
+        note = ("You have a new image. It is in your instructions above"
+                  if self.task.defn.engine == "choice" else "")
+            
         self.history.append({"role": "user",
-                             "content": f"[Round {data['round']} of {data['of']} has started. You have a new image. It is in your instructions above]"})
+                             "content": f"[Round {data['round']} of {data['of']} has started. {note}]"})
 
 
         limit = data.get("time_limit")
@@ -257,7 +291,8 @@ class Agent:
         self.others_done = {p: False for p in others}
         self._drain_triggers()
 
-        self.triggers.put_nowait(Trigger("round_start"))
+        if self.task.defn.engine == "choice":
+            self.triggers.put_nowait(Trigger("round_start"))
 
 
     def note(self, text: str, trigger: bool = False):
@@ -310,11 +345,63 @@ class Agent:
                 self.turn = None
             
     def render_prompt(self):
+        v = self.view or {}
         self.prompt = self.task.render(
             "system", materials=self.image, self_description=self.self_description,
             max_words=self.settings.max_words, perception=self.settings.perception,
+            role=v.get("role"), director=v.get("director"),
+            grid=v.get("grid"), figures=v.get("figures"),
             **self.task.prompt_context(self.stimuli_name, self.id))
 
+
+    def _figure_file(self, url: str, suffix: str):
+        """
+        Path for a figure URL like `/stimuli/<task>/<set>/<file>`
+        """
+        set_name, filename = url.split("/")[-2:]
+        return (self.task.dir / "stimuli" / set_name / filename).with_suffix(suffix)
+
+    def load_view_materials(self):
+        """
+        Matching: the director's target grid, or a matcher's labelled cards
+        """
+        v = self.view
+        if v["role"] == "director":
+            items = [(f"Slot {i}", url) for i, url in enumerate(v["target"], start=1)]
+            heading = "Your target grid, slot by slot:"
+        else:
+            items = [(f"Card {c}", url) for c, url in v["cards"].items()]
+            heading = "Your cards:"
+
+        if self.settings.perception == "image":
+            content = [{"type": "text", "text": heading}]
+            for label, url in items:
+                png = self._figure_file(url, ".png").read_bytes()
+                content += [{"type": "text", "text": f"{label}:"},
+                            {"type": "image_url", "image_url": {
+                                "url": "data:image/png;base64,"+base64.b64encode(png).decode()}}]
+            self.materials_message = {"role": "user", "content": content}
+            self.image = ""
+        else:
+            self.materials_message = None
+            self.image = "\n\n".join(f"{label}:\n{self._figure_file(url, ".svg").read_text()}"
+                                     for label, url in items)
+
+        self.image_file = {"files": [self._figure_file(url, '.png').name for _, url in items]}
+        
+    def board_note(self) -> str:
+        """
+        Matching: the matcher's grid as text, as they'd see it on screen
+        """
+        v = self.view
+        if not v or v.get("role") != "matcher":
+            return ""
+
+        slots = "; ".join(f"slot {i}: {'card' + c if c else 'empty'}"
+                          for i, c in enumerate(v["slots"], start=1))
+
+        return f"Your grid: {slots}.\nCards not placed: {', '.join(v['pool']) or 'none'}."
+    
 
     async def describe_materials(self):
         """
@@ -396,7 +483,7 @@ class Agent:
         """
         Who has signalled done - as seen in indicators in chatroom UI
         """
-        labels = self.task.defn.answer.options
+        labels = self.task.defn.answer.options if self.task.defn.answer else {}
         parts = []
         if self.done and self.my_answer:
             answer = ", ".join(labels.get(a, a) for a in self.my_answer)
@@ -409,6 +496,10 @@ class Agent:
         others = sorted(p for p, d in self.others_done.items() if d)
         parts.append(f"Also signalled done: {', '.join(others)}." if others
                      else "Nobody else has signalled done.")
+
+        if (board := self.board_note()):
+            parts.append(board)
+            
         return "\n".join(parts)
 
 
@@ -431,16 +522,25 @@ class Agent:
         """
         Carry out the action the model chose
         """
+
+        for p in getattr(action, "places", None) or []:
+            if not self.in_round or (epoch is not None and epoch != self.round_epoch):
+                break
+            await self.sio.emit("task_action", {"type": "place", "card": p.card,
+                                                "slot": p.slot})
+            self.trace(stage="action", outcome="sent", card=p.card, slot=p.slot, turn_id=turn_id)
+        
         if action.current_action == "wait":
             return
         if action.message:
             sent = await self.say(action.message, cooldown, context_seq, epoch, turn_id)
             if not sent:
                 return
+        answer = getattr(action, "answer", None)
         if action.current_action == "task_complete":
-            same = self.done and sorted(action.answer or []) == sorted(self.my_answer or [])
+            same = self.done and sorted(answer or []) == sorted(self.my_answer or [])
             if not same:
-                await self.signal_done(True, action.answer)
+                await self.signal_done(True, answer)
         elif action.current_action == "withdraw" and self.done:
             await self.signal_done(False)
 
@@ -636,14 +736,18 @@ class Agent:
                                 last_sender=trigger.sender,
                                 last_message=trigger.text,
                                 typing_note=self.typing_note(),
-                                status_note=self.status_note())
+                                status_note=self.status_note(),
+                                role=(self.view or {}).get("role")
+                                )
 
     def render_turn(self, silence: bool) -> str:
         return self.task.render("turn",
                                 situation=self.task.render("silence") if silence else "",
                                 typing_note=self.typing_note(),
                                 status_note=self.status_note(),
-                                max_words=self.settings.max_words)
+                                max_words=self.settings.max_words,
+                                role=(self.view or {}).get("role")
+                                )
 
 
 
