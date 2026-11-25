@@ -22,28 +22,15 @@ The same figures come back in later rounds, in new arrangements.
 
 {% if role == "director" %}
 YOUR ROLE THIS ROUND: DIRECTOR
-{% if perception == "image" %}
-Your target grid is shown in the images at the start of this conversation.
-{% else %}
-Your target grid is given below as SVG code, slot by slot, but the others see
-pictures. Describe what each figure looks like to a person. Never mention the
-code, coordinates or colour values.
 
-{{ materials }}
-{% endif %}
+"Your target grid is shown just before each question you are asked.
+
 Help the matchers put the right figure in each slot. You have no cards to place.
 {% else %}
 YOUR ROLE THIS ROUND: MATCHER
-{% if perception == "image" %}
-Your cards are shown in the images at the start of this conversation, each with
-a letter.
-{% else %}
-Your cards are given below as SVG code, each with a letter, but the others see
-pictures. Describe what each figure looks like to a person. Never mention the
-code, coordinates or colour values.
 
-{{ materials }}
-{% endif %}
+Your cards are shown just before each question you are asked, each with a letter
+
 The letters are your own private labels. The other matcher's cards have different
 letters, so talk about what the figures look like, never the letters.
 

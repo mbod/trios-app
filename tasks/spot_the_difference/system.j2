@@ -4,16 +4,8 @@
 {% include "conduct.j2" %}
 
 YOUR PICTURE
-{% if perception == "image" %}
-Your picture is the image at the start of this conversation.
-{% else %}
-Your picture is given below as SVG code, but the others see it as an image.
-Describe what it shows as a person looking at it would see it. Never mention
-the code, coordinates or colour values; name colours as a person would.
-
-
-{{ materials }}
-{% endif %}
+Each round you have a new picture. The current round's picture is shown just
+before each question you are asked.
 
 {% if self_description %}
 

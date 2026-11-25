@@ -232,26 +232,26 @@ class Agent:
 
              
     def start_round(self, data):
-
-        # get stimuli for participant
-        #image = self.task.material_path(data["stimuli"], data["round_id"], self.id).read_text()
-
+        self.round_label = data["round"]
         self.view = None
         if self.task.defn.engine == "choice":
             path = self.task.material_path(data["stimuli"], data["round_id"], self.id)
-            if self.settings.perception == "image":             # bitmap image stimuli (PNG)
+            label = f"Your picture for round {data['round']}"
+            if self.settings.perception == "image":
                 png = path.with_suffix(".png").read_bytes()
-                image = ""
                 self.materials_message = {"role": "user", "content": [
-                    {"type": "text", "text": "Your picture for this round: "},
+                    {"type": "text", "text": f"{label}:"},
                     {"type": "image_url", "image_url": {
                         "url": "data:image/png;base64," + base64.b64encode(png).decode()}}]}
                 self.image_file = {"file": path.with_suffix(".png").name,
                                    "sha256": hashlib.sha256(png).hexdigest()[:12]}
-            else:                                               # SVG stimuli 
-                image = path.read_text()
-                self.materials_message = None
-                self.image_file = None
+            else:
+                self.materials_message = {"role": "user", "content": (
+                    f"{label} (given as SVG code; the others see it as an image. Describe "
+                    "what it shows as a person looking at it would see it, never the code, "
+                    f"coordinates or colour values):\n\n{path.read_text()}")}
+                self.image_file = {"file": path.name}
+            image = ""
         else:                                 # matching task: materials provided from view of engine
             image = ""
             self.materials_message = None
@@ -274,13 +274,10 @@ class Agent:
         if self.settings.memory == "none":      # start each round with clear memory
             self.history = []
 
-        note = ("You have a new image. It is in your instructions above"
-                  if self.task.defn.engine == "choice" else "")
-            
+
         self.history.append({"role": "user",
-                             "content": f"[Round {data['round']} of {data['of']} has started. {note}]"})
-
-
+                             "content": f"[Round {data['round']} of {data['of']} has started. Each of you has a new picture.]"})
+        
         limit = data.get("time_limit")
         self.round_deadline = time.monotonic() + limit if limit else None
 
@@ -373,6 +370,8 @@ class Agent:
             items = [(f"Card {c}", url) for c, url in v["cards"].items()]
             heading = "Your cards:"
 
+        heading = f"Round {self.round_label}: " + heading
+            
         if self.settings.perception == "image":
             content = [{"type": "text", "text": heading}]
             for label, url in items:
@@ -383,11 +382,14 @@ class Agent:
             self.materials_message = {"role": "user", "content": content}
             self.image = ""
         else:
-            self.materials_message = None
-            self.image = "\n\n".join(f"{label}:\n{self._figure_file(url, ".svg").read_text()}"
+            text = "\n\n".join(f"{label}:\n{self._figure_file(url, ".svg").read_text()}"
                                      for label, url in items)
 
-        self.image_file = {"files": [self._figure_file(url, '.png').name for _, url in items]}
+            self.materials_message = {"role": "user", "content": (
+                f"{heading} (given as SVG code; the others see pictures. Describe them as a "
+                f"person would see them, never the code):\n\n{text}")}
+
+        self.image = ""
         
     def board_note(self) -> str:
         """
@@ -603,8 +605,8 @@ class Agent:
                 "turn_id": turn_id}
         
         messages = [{"role": "system", "content": self.prompt},
-                    *([self.materials_message] if self.materials_message else []),
                     *(self.history if use_history else []),
+                    *([self.materials_message] if self.materials_message else []),
                     {"role": "user", "content": instruction}]
 
         deadline = time.monotonic() + RETRY_BUDGET_S
