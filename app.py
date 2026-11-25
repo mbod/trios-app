@@ -92,6 +92,14 @@ connected_clients = {}
 
 # --- app routes --------------------------------------------------
 
+@app.route('/')
+def index():
+    '''
+    Landing page with links into the chatroom and admin pages
+    '''
+    return render_template('index.html', roles=PARTICIPANTS)
+
+
 @app.route('/health')
 def health():
     return jsonify({"ok": True, "active_sessions": sorted(SESSIONS)})

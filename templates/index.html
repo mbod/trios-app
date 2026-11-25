@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Trios chatroom{% endblock %}
+{% block content %}
+
+<div id="landing">
+
+  <header>
+    <div id="home-header">Trios chatroom</div>
+    <p class="landing-intro">
+      A chatroom for three-member teams of humans, LLM agents, or a mix of both,
+      working together to complete a task. Developed by researchers at the
+      <a href="https://www.asc.upenn.edu" target="_blank" rel="noopener noreferrer">Annenberg School for Communication</a>
+      at the University of Pennsylvania. See the
+      <a href="https://github.com/mbod/trios-app/" target="_blank" rel="noopener noreferrer">project on GitHub</a>.
+    </p>
+  </header>
+
+  <div class="landing-cards">
+
+    <section class="landing-card">
+      <h2>Join as a participant</h2>
+      <p>Enter the room name you were given, then choose your participant letter.</p>
+      <form class="room-form landing-form">
+        <label for="join-room">Room</label>
+        <input id="join-room" name="room" required
+               pattern="[A-Za-z0-9_-]{1,32}" placeholder="e.g. test"
+               title="Letters, numbers, - or _ (up to 32)" autocomplete="off">
+        <div class="landing-buttons">
+          {% for p in roles %}
+          <button type="submit" name="user_id" value="{{ p }}"
+                  class="landing-button from{{ p }}">Join as {{ p }}</button>
+          {% endfor %}
+        </div>
+      </form>
+    </section>
+
+    <section class="landing-card">
+      <h2>Researchers</h2>
+      <p>Start sessions, end rounds and see what is running. Requires the admin password.</p>
+      <div class="landing-buttons">
+        <a class="landing-button" href="{{ url_for('admin_sessions') }}">Active sessions</a>
+        <a class="landing-button" href="{{ url_for('admin_start') }}">Start a session</a>
+      </div>
+
+      <hr class="landing-divider">
+
+      <form class="room-form landing-form">
+        <label for="observe-room">Observe a room (shows every participant's images)</label>
+        <input id="observe-room" name="room" required
+               pattern="[A-Za-z0-9_-]{1,32}" placeholder="e.g. test"
+               title="Letters, numbers, - or _ (up to 32)" autocomplete="off">
+        <div class="landing-buttons">
+          <button type="submit" name="user_id" value="" class="landing-button">Observe</button>
+        </div>
+      </form>
+    </section>
+
+  </div>
+</div>
+
+<script type="text/javascript">
+  // Chatroom URLs are /chatroom/<room>, plus ?user_id=<letter> for participants
+  const chatroomUrl = {{ url_for('chatroom', room_id='__room__')|tojson }};
+
+  document.querySelectorAll('.room-form').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const room = form.elements.room.value.trim();
+      const userId = event.submitter ? event.submitter.value : '';
+      let url = chatroomUrl.replace('__room__', encodeURIComponent(room));
+      if (userId) {
+        url += '?user_id=' + encodeURIComponent(userId);
+      }
+      window.location.href = url;
+    });
+  });
+</script>
+
+{% endblock %}

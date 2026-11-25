@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Team task chatroom</title>
+    <title>{% block title %}Team task chatroom{% endblock %}</title>
     <link rel="stylesheet" href="{{url_for('static', filename='style/style.css')}}" />
 
     {% if participants|length==1 %}
