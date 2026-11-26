@@ -387,7 +387,7 @@ def handle_connect(auth):
     else:
         user_id = auth.get('user_id')
         if user_id:
-            indentity = {'id': user_id, 'room': auth.get('room'), 'kind': 'human'}
+            identity = {'id': user_id, 'room': auth.get('room'), 'kind': 'human'}
         elif flask_session.get('admin'):
             identity = {'id': 'Experimenter', 'room': auth.get('room'), 'kind': 'experimenter'}
         else:

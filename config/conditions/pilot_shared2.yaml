@@ -1,0 +1,18 @@
+description: Pilot, selections visible to everyone
+participants:
+   A:
+      model: openai:gpt-6-luna
+      model_settings: {reasoning_effort: low}
+      max_words: 12
+      cooldown_after_reply: [0,2]
+      perception: image
+
+   B:
+      model: anthropic:claude-haiku-5-5
+      max_words: 12
+      cooldown_after_reply: [0,2]
+      perception: image
+      
+   C: human
+rules:
+   selection_visibility: live

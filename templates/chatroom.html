@@ -1,5 +1,66 @@
 {% extends 'base.html' %} {% block content %}
 
+<style>
+  /* ---- sizes: change these two numbers to resize everything ---- */
+  #task-board { --tile: 110px; --cell: 44px; }
+  .obs-board  { --tile: 56px;  --cell: 26px; }
+
+  /* ---- matching boards ---- */
+  .tb-grid { display: grid; gap: 4px; width: max-content; }
+  .tb-slot { position: relative; width: var(--tile); height: var(--tile);
+             background: #fff; border: 1px dashed #999; box-sizing: border-box; }
+  .tb-slot img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .tb-num { position: absolute; top: 2px; left: 4px; font-size: 11px; color: #555; }
+  .tb-label { margin: 8px 0 4px; font-weight: bold; color: #eee; }
+  .tb-selected { outline: 3px solid #f5a623; outline-offset: -3px; }
+  .tb-pool { display: flex; flex-wrap: wrap; gap: 6px; max-width: calc(4 * var(--tile)); min-height: 40px; }
+  .tb-card { width: calc(var(--tile) * 0.7); height: calc(var(--tile) * 0.7);
+             background: #fff; object-fit: contain; cursor: pointer; border: 1px solid #999; }
+
+  /* ---- observer boards: title on top, grid and pool side by side ---- */
+  .stimImage:has(.obs-board:not(:empty)) { height: auto; overflow: visible; }
+  .obs-board { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; padding: 4px; }
+  .obs-board:empty { display: none; }
+  .obs-title { flex-basis: 100%; color: #fff; font-weight: bold; font-size: 13px; }
+  .obs-pool { display: grid; grid-template-columns: repeat(4, 30px); gap: 3px; }
+  .obs-pool figure { margin: 0; text-align: center; }
+  .obs-pool img { width: 30px; height: 30px; background: #fff; object-fit: contain; display: block; }
+  .obs-pool figcaption { font-size: 10px; color: #fff; }
+
+  /* ---- maze ---- */
+  .mz-grid { display: grid; gap: 2px; width: max-content; }
+  .mz-label { font-size: 11px; color: #ccc; display: flex; align-items: center;
+              justify-content: center; padding: 0 3px; }
+  .mz-cell { position: relative; width: var(--cell); height: var(--cell);
+             display: flex; align-items: center; justify-content: center;
+             font-weight: bold; font-size: calc(var(--cell) * 0.4); box-sizing: border-box; }
+  .mz-unknown { background: #3a3a3a; }
+  .mz-open    { background: #f4f4f4; color: #333; }
+  .mz-wall    { background: #a0522d; }
+  .mz-start   { background: #c8f0c8; color: #1a6b1a; }
+  .mz-end     { background: #f8d0d0; color: #9b1c1c; }
+  .mz-path    { box-shadow: inset 0 0 0 3px #4a90d9; }
+  .mz-found   { outline: 2px solid #f5a623; }
+  .mz-target  { box-shadow: inset 0 0 0 3px #f5a623; color: #f5a623; }
+  .mz-token   { position: absolute; width: 60%; height: 60%; border-radius: 50%;
+                background: #1f6fd1; border: 2px solid #fff; }
+  .mz-status  { margin: 6px 0; color: #eee; font-size: 14px; }
+  .mz-controls { display: grid; gap: 4px; width: max-content; margin: 6px 0;
+                 grid-template-areas: ". up ." "left . right" ". down ."; }
+  .mz-up { grid-area: up; } .mz-down { grid-area: down; }
+  .mz-left { grid-area: left; } .mz-right { grid-area: right; }
+  .mz-controls button, .mz-votes button { padding: 6px 10px; font-size: 14px; }
+
+  .mz-votes { display: flex; flex-direction: column; gap: 4px; }
+  .mz-vote-row { display: flex; gap: 6px; align-items: center; color: #eee; font-size: 14px; }  
+
+  /* ---- command hints and system lines in the chat ---- */
+  #cmd-hints { white-space: pre; font-family: monospace; font-size: 12px; background: #222;
+               color: #ddd; padding: 6px; border-radius: 4px; margin-bottom: 4px; }
+  .system-line { font-style: italic; font-size: 13px; margin: 2px 8px; color: #ccc; }
+  .sys-error { color: #ff8a80; }
+  .sys-ok { color: #a5d6a7; }
+</style>
 
 <div id="top-bar">
   <div id="home-header">Room {{ room }}</div>
@@ -22,7 +83,7 @@
   </div>
 
   </div>
-  
+
   <div id="stimuli">
     {% for part in participants %}
     <div class="from{{part}} stimImage">
@@ -40,13 +101,15 @@
       <div id="answer-prompt"></div>
       <div id="answer-options"></div>
       <button id="done-btn" type="button">We're done</button>
-    </div>  
+    </div>
+
+    <div id="cmd-hints" hidden></div>
 
     <div id="message-box">
       <textarea type="text" placeholder="Enter your message"
 		id="message-input" name="message"
 		rows="4"></textarea>
-      
+
       <button type="submit" id="send-btn" onclick="sendMessage()">Send</button>
     </div>
     {% endif %}
@@ -58,14 +121,10 @@
       <button type="button" id="exp-send">Send</button>
     </div>
     {% endif %}
-    
-	
+
+
   </div>
 
-  
-
-
-  
 </div>
 
     <script type="text/javascript">
@@ -78,8 +137,8 @@
       let lastSeq=0;
       console.log(socketio);
       const isParticipant = {{ (participants|length==1)|tojson }};
-      
-      
+
+
       {% if participants|length==1 %}
       const from = '{{participants[0]}}';
       const textarea = document.getElementById('message-input');
@@ -118,20 +177,36 @@
 
 	  if (textarea.value.trim() === '') stopTyping();
 	  else startTyping();
+	  updateHints();
 
       });
-	  
+
       textarea.addEventListener('blur', stopTyping);
-      
+
 
       textarea.addEventListener('keydown', function(event) {
               if (event.key === 'Enter') {
-      
-		  event.preventDefault(); 
-      
+
+		  event.preventDefault();
+
 		  sendMessage();
 	      }
       });
+
+
+      /* ---- COMMAND HINTS (shown while typing a line that starts with /) ---- */
+      let commandHelp = '';           // from the task view; empty = no hints
+
+      function updateHints() {
+        const box = document.getElementById('cmd-hints');
+        const line = textarea.value.split('\n').at(-1);
+        if (!commandHelp || !line.startsWith('/')) { box.hidden = true; return; }
+        const word = line.slice(1).split(/\s+/)[0].toLowerCase();
+        const all = commandHelp.split('\n');
+        const match = all.filter(l => l.slice(1).startsWith(word));
+        box.textContent = (match.length ? match : all).join('\n');
+        box.hidden = false;
+      }
 
 
       /* ---- DONE AND ANSWER ---- */
@@ -142,6 +217,7 @@
       }
 
       function limitChoices() {
+        if (!answerFormat) return;
         const full = chosen().length >= answerFormat.choose;
         document.querySelectorAll('#answer-options input').forEach(cb => {
           cb.disabled = iAmDone || (full && !cb.checked);
@@ -173,7 +249,7 @@
           setText('answer-prompt', '');
         }
         setDoneButton(Boolean(done));
-        document.getElementById('done-panel').hidden = false;
+        document.getElementById('done-panel').hidden = mazeShown;
       }
 
       document.getElementById('done-btn').addEventListener('click', () => {
@@ -228,6 +304,7 @@
       }
 
       function renderBoard(v) {
+        if (!v || !v.grid) return;
         boardView = v;
         const board = document.getElementById('task-board');
         board.replaceChildren();
@@ -275,15 +352,82 @@
         board.append(label('Your grid'), grid, label('Cards'), pool);
       }
 
+
+      /* ---- MAZE (participant) ---- */
+      let mazeShown = false;
+
+      function sendCommand(text) {
+        if (!inRound) return;
+        socketio.emit('message', { message: text, context_seq: lastSeq });
+      }
+
+      function mzButton(text, cmd, enabled, cls) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = text;
+        if (cls) b.className = cls;
+        b.disabled = !enabled;
+        b.addEventListener('click', () => sendCommand(cmd));
+        return b;
+      }
+
+      function renderMaze(v) {
+        mazeShown = true;
+        commandHelp = v.help || '';
+        const board = document.getElementById('task-board');
+        board.replaceChildren();
+        board.hidden = false;
+        document.getElementById('done-panel').hidden = true;
+
+        const live = inRound && !v.finished;
+
+        const votes = document.createElement('div');
+        votes.className = 'mz-votes';
+        for (const pr of v.proposals || []) {
+          const mine = pr.by === from;
+          const row = document.createElement('div');
+          row.className = 'mz-vote-row';
+          const lab = document.createElement('span');
+          lab.textContent = `${ARROWS[pr.dir]} ${pr.dir} (${pr.by})`;
+          row.append(lab,
+            mzButton('Agree', `/accept ${pr.dir}`, live && !pr.agree.includes(from)),
+            mzButton('Disagree', `/reject ${pr.dir}`, live && !mine && !pr.disagree.includes(from)));
+          if (mine) row.append(mzButton('Cancel', '/cancel', live));
+          votes.appendChild(row);
+        }	
+
+        const pad = document.createElement('div');
+        pad.className = 'mz-controls';
+        for (const d of ['up', 'left', 'right', 'down'])
+          pad.appendChild(mzButton(`${ARROWS[d]} ${d}`, `/go ${d}`, live, 'mz-' + d));
+
+        const votes = document.createElement('div');
+        votes.className = 'mz-votes';
+        votes.append(mzButton('Accept', '/accept', live && p && !accepted),
+                     mzButton('Reject', '/reject', live && p && !mine),
+                     mzButton('Cancel', '/cancel', live && mine));
+
+        board.append(label('Maze'), mazeGrid(v), mazeStatus(v), pad, votes);
+      }
+
+      function renderTask(v) {
+        if (!v) return;
+        if (v.size) renderMaze(v);
+        else if (v.grid) renderBoard(v);
+      }
+
       function clearBoard() {
         boardView = null;
         heldCard = null;
+        mazeShown = false;
+        commandHelp = '';
+        updateHints();
         const board = document.getElementById('task-board');
         board.replaceChildren();
         board.hidden = true;
       }
 
-      socketio.on('task_view', renderBoard);
+      socketio.on('task_view', renderTask);
       socketio.on('action_error', (e) => notice(e.error));
 
 
@@ -312,7 +456,13 @@
           box.replaceChildren();
           const title = document.createElement('div');
           title.className = 'obs-title';
-          title.textContent = `${v.participant}: ${v.role}`;
+          title.textContent = `${v.participant}: ${v.role || 'known cells'}`;
+
+          if (v.size) {                                   // maze
+            box.append(title, mazeGrid(v), mazeStatus(v));
+            continue;
+          }
+
           const grid = document.createElement('div');
           grid.className = 'tb-grid';
           grid.style.gridTemplateColumns = `repeat(${v.grid[1]}, 1fr)`;
@@ -347,7 +497,7 @@
         document.querySelectorAll('.obs-board').forEach(b => b.replaceChildren());
       }
 
-      socketio.on('task_view', v => { obsViews[v.participant] = v; renderObserver(); });
+      socketio.on('task_view', v => { if (v && v.participant) { obsViews[v.participant] = v; renderObserver(); } });
       socketio.on('session_state', s => {
         if (s.views) { Object.assign(obsViews, s.views); renderObserver(); }
       });
@@ -366,13 +516,103 @@
         box.addEventListener('keydown', e => {
           if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
         });
-      }      
-      
-      
+      }
+
+
       {% endif %}
 
 
       /* --------- END OF PARTICIPANT BLOCK ------ */
+
+
+      /* ---- MAZE DRAWING (shared by participants and observers) ---- */
+      const ARROWS = { up: '↑', down: '↓', left: '←', right: '→' };
+      const STEP = { up: [-1, 0], down: [1, 0], left: [0, -1], right: [0, 1] };
+      const CELL_CLASS = { '.': 'mz-open', 'x': 'mz-wall', 's': 'mz-start', 'e': 'mz-end' };
+
+      function cellName(r, c) { return `r${r + 1}c${c + 1}`; }
+      function parseCell(n) { const m = /^r(\d+)c(\d+)$/.exec(n); return [m[1] - 1, m[2] - 1]; }
+
+      function mzLabel(text) {
+        const el = document.createElement('div');
+        el.className = 'mz-label';
+        el.textContent = text;
+        return el;
+      }
+
+      function mazeGrid(v) {
+        const [rows, cols] = v.size;
+        const path = new Set(v.path);
+        const walls = new Set(v.walls_found);
+
+        const targets = {};
+        for (const pr of v.proposals || []) {
+          const [r, c] = parseCell(v.position);
+          const [dr, dc] = STEP[pr.dir];
+          targets[cellName(r + dr, c + dc)] = pr.dir;
+        }
+	
+        const grid = document.createElement('div');
+        grid.className = 'mz-grid';
+        grid.style.gridTemplateColumns = `auto repeat(${cols}, var(--cell))`;
+        grid.appendChild(document.createElement('div'));              // corner
+        for (let c = 0; c < cols; c++) grid.appendChild(mzLabel(`c${c + 1}`));
+        for (let r = 0; r < rows; r++) {
+          grid.appendChild(mzLabel(`r${r + 1}`));
+          for (let c = 0; c < cols; c++) {
+            const name = cellName(r, c);
+            const sym = walls.has(name) ? 'x' : v.known[name];
+            const el = document.createElement('div');
+            el.className = 'mz-cell ' + (CELL_CLASS[sym] || 'mz-unknown');
+            el.title = name;
+            if (walls.has(name)) el.classList.add('mz-found');
+            if (path.has(name)) el.classList.add('mz-path');
+            if (sym === 's') el.textContent = 'S';
+	    if (sym === 'e') el.textContent = 'E';
+            if (targets[name]) { el.classList.add('mz-target'); el.textContent = ARROWS[targets[name]]; }			      
+
+            if (name === v.position) {
+              const t = document.createElement('span');
+              t.className = 'mz-token';
+              el.appendChild(t);
+            }
+            grid.appendChild(el);
+          }
+        }
+        return grid;
+      }
+
+      function mazeStatus(v) {
+        const bits = [`Lives: ${v.lives ?? '∞'}`, `Moves left: ${v.moves_left}`];
+
+        for (const pr of v.proposals || [])
+          bits.push(`${pr.dir} (${pr.by}): for ${pr.agree.join(', ') || 'nobody'}` +
+                    (pr.disagree.length ? `; against ${pr.disagree.join(', ')}` : ''));
+        if ((v.proposals || []).length) bits.push(`needs ${v.needed}`);
+			      
+        if (v.finished) bits.push({ goal: 'Reached the end!', no_lives: 'No lives left',
+                                    no_moves: 'No moves left' }[v.finished] || v.finished);
+        const el = document.createElement('div');
+        el.className = 'mz-status';
+        el.textContent = bits.join(' · ');
+        return el;
+      }
+
+
+      /* ---- SYSTEM LINES IN THE CHAT (notices and command feedback) ---- */
+      function systemLine(text, cls) {
+        const messages = document.getElementById('messages');
+        const p = document.createElement('p');
+        p.className = 'system-line ' + (cls || '');
+        p.textContent = text;
+        messages.appendChild(p);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      socketio.on('notice', n => systemLine(n.text));
+      socketio.on('command_feedback', f => systemLine(
+        isParticipant ? f.text : `(to ${f.participant}) ${f.text}`,
+        f.ok ? 'sys-ok' : 'sys-error'));
 
 
       function setChatOpen(open, note) {
@@ -385,8 +625,6 @@
           if (!open) stopTyping();
 
       }
-
-
 
 
 
@@ -422,18 +660,16 @@
 	  typers.clear();
 	  renderTypers();
       });
-      
+
 
       /* END TYPING indicator */
-      
 
 
 
-      
       socketio.on("message", function (message) {
 
 	  if (typeof message.seq === "number") lastSeq = Math.max(lastSeq, message.seq);
-	  
+
 	  typers.delete(message.from);
 	  renderTypers();
 	  console.log('WS: "message" ' + message.from + ' ' + message.message);
@@ -442,16 +678,10 @@
 
 
 
-      
-        
     function createChatItem(message, sender) {
 
-      /* TODO: Fix and check this logic for selecting which WS messages
-               to pay attention to - probably a cleaner way of doing this  */
-    
-
       console.log(`${sender}: ${message}`);
-        
+
 	const messages = document.getElementById("messages");
 	const p = document.createElement("p");
 	p.className = `message from${sender}`;
@@ -460,31 +690,35 @@
         messages.appendChild(p);
 
 	// Keep inbox scrolled to bottom
-	messages.scrollTop = messages.scrollHeight;        
+	messages.scrollTop = messages.scrollHeight;
     }
 
 
-	   
+
    function sendMessage() {
 
        {% if participants|length==1 %}
        stopTyping();
        {% endif %}
-       
-	  
+
+
       var msgInput = document.getElementById("message-input");
       var msg = msgInput.value;
       if (msg === "") return;
 
-            
+
 	console.log(`User ${from} message: ${msg}`);
 
        socketio.emit("message", { message: msg, from: from,
 				  context_seq: composeSeq ?? lastSeq });
        composeSeq = null;
       if (msgInput.disabled === false) msgInput.value = "";
+
+       {% if participants|length==1 %}
+       updateHints();
+       {% endif %}
    }
-      
+
 
 
       /* ---- SESSION AND ROUNDS ---- */
@@ -531,7 +765,7 @@
       }
 
       function showMaterials(materials) {
-	  for (const [p, url] of Object.entries(materials)) {
+	  for (const [p, url] of Object.entries(materials || {})) {
 	      const img = document.getElementById('stim-' + p);
 	      if (img) { img.src = url; img.hidden = false; }
 	  }
@@ -567,12 +801,12 @@
 
       socketio.on('session_state', (s) => {
 
-          setChatOpen(s.round !== null && s.round !== undefined, "Wating for the round to start...");
+          setChatOpen(s.round !== null && s.round !== undefined, "Waiting for the round to start...");
 
 	  answerFormat = s.answer_format;
 	  if (s.round != null) {
-	      if (isParticipant && s.view) renderBoard(s.view);
 	      enterRound(s.round, s.rounds, s.materials, s.status, s.seconds_left);
+	      if (isParticipant && s.view) renderTask(s.view);
 	  } else {
 	      setText('round-info', 'Waiting for the next round');
 	  }
@@ -608,7 +842,7 @@
 	      document.getElementById('done-panel').hidden = true;
 	      clearBoard();
 	  }
-	  
+
       });
 
       socketio.on('session_end', () => {
@@ -616,7 +850,7 @@
 	  notice('');
       });
 
-      
+
 
       socketio.on("round_start", () => setChatOpen(true));
       socketio.on("round_end", () => setChatOpen(false, "Waiting for next round..."));
@@ -624,12 +858,7 @@
       socketio.on("message_rejected", (data) => {
               setChatOpen(false, data.error);
       });
-      
+
   </script>
-
-    
-
-
-
 
 {% endblock %}

@@ -49,6 +49,8 @@ class Rules(BaseModel):
     director: str = "A"
     trial_end: Literal["all_done", "first_done"] = "all_done"
 
+    proposals: Literal["single", "multiple"] = "single"
+    
     # maze settings
     decide: Literal["single", "majority", "all"] = "single"
     on_wall: Literal["stay", "restart"] = "stay"
@@ -172,20 +174,25 @@ class Task:
             raise ValueError(f"no stimulus set at {folder}")
 
 
-        if self.defn.engine == "maze":
-            for mid, spec in stim.mazes.items():
-                if not NAME_PATTERN.match(mid):
-                    raise ValueError(f"{set_name}: invalid maze name '{mid}'")
-                try:
-                    maze.check(spec, self.defn.participants)
-                except ValueError as e:
-                    raise ValueError(f"{set_name}, {mid}: {e}") from None
-            return stim
                     
         
         with open(path) as f:
             stim = StimulusSet(**(yaml.safe_load(f) or {}))
 
+            
+            # if task uses maze engine get that maze definition is valid
+            if self.defn.engine == "maze":
+                for mid, spec in stim.mazes.items():
+                    if not NAME_PATTERN.match(mid):
+                        raise ValueError(f"{set_name}: invalid maze name '{mid}'")
+                    try:
+                        maze.check(spec, self.defn.participants)
+                    except ValueError as e:
+                        raise ValueError(f"{set_name}, {mid}: {e}") from None
+                return stim
+
+
+            
             # if task uses a matching engine check correct number of figures
             if self.defn.engine == "matching":
                 if len(stim.figures) < 2 or len(set(stim.figures)) != len(stim.figures):

@@ -399,7 +399,7 @@ class Agent:
         if not v or v.get("role") != "matcher":
             return ""
 
-        slots = "; ".join(f"slot {i}: {'card' + c if c else 'empty'}"
+        slots = "; ".join(f"slot {i}: {'card ' + c if c else 'empty'}"
                           for i, c in enumerate(v["slots"], start=1))
 
         return f"Your grid: {slots}.\nCards not placed: {', '.join(v['pool']) or 'none'}."
@@ -409,6 +409,11 @@ class Agent:
         """
         Look at the round's materials before joining the conversation
         """
+
+        # temp guard for setting self_description and trying task that doesn't have it
+        if "describe" not in self.task.prompts:
+            return
+        
         if self.settings.perception != "self_description":
             return
 

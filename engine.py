@@ -90,7 +90,7 @@ class TaskEngine:
 
 
     def resolve(self, word: str) -> str | None:
-        for cm, aliases in self.COMMANDS.items():
+        for cmd, aliases in self.COMMANDS.items():
             if word == cmd or word in aliases:
                 return cmd
         return None
@@ -111,7 +111,7 @@ class TaskEngine:
     def _ordered(self, ids: list[str], rng) -> list[str]:
         if self.rules.order == "shuffled":
             rng.shuffle(ids)
-        if self.rules.rounds in not None:
+        if self.rules.rounds is not None:
             if self.rules.rounds > len(ids):
                 raise ValueError(f"{self.rules.rounds} rounds requested; "
                                  f"{self.stimuli_name} has {len(ids)}")
@@ -295,12 +295,16 @@ class MazeEngine(TaskEngine):
 
     FILLER = {"to", "the", "a", "one", "step", "please", "go", "move"}
 
-    HELP = ("/go up|down|left|right   propose a move (also /move, /m)\n"
-            "/accept                   agree to the proposed move\n"
-            "/reject                   turn down the proposed move\n"
+
+    HELP = ("/go up|down|left|right    propose a move (also /move, /m); the same\n"
+            "                          direction as an open proposal agrees with it\n"
+            "/accept [direction]       agree with a proposal (also /agree, /yes)\n"
+            "/reject [direction]       disagree with it (also /disagree, /no)\n"
+            "                          the direction can be left out if only one is open;\n"
+            "                          you back one direction at a time and can change\n"
             "/cancel                   withdraw your own proposal\n"
             "/help                     show this list")
-
+    
 
     def plan_rounds(self, rng):
         return self._ordered(list(self.stimuli.mazes), rng)
@@ -319,7 +323,7 @@ class MazeEngine(TaskEngine):
         self.moves = self.bumps = 0
         self.lives = self.rules.lives
         self.budget = self.shortest + self.rules.extra_moves
-        self.proposal = None
+        self.proposals = {}
         self.finished = None
 
     def setup_log(self):
@@ -334,14 +338,63 @@ class MazeEngine(TaskEngine):
                 "majority": n // 2 + 1,
                 "all": n}[self.rules.decide]
 
+    def _direction(self, args) -> str:
+        """
+        Extract direction from a move/go command
+        """
+        words = [w for w in args if w not in self.FILLER]
+        if not words:
+            raise ValueError("which way? /go up, down, left or right")
+        d = self.DIRECTIONS.get(words[0])
+        if d is None:
+            close = difflib.get_close_matches(words[0], list(self.DIRECTIONS), n=1)
+            hint = (f" Did you mean /go {self.DIRECTIONS[close[0]]}?" if close
+                    else " Use up, down, left or right.")
+            raise ValueError(f"'{words[0]}' isn't a direction.{hint}")
+        dr, dc = maze.DIRS[d]
+        if not maze.inside(self.grid, self.pos[0] + dr, self.pos[1] + dc):
+            raise ValueError(f"can't go {d}: that's the edge of the maze")
+        return d
+
+    def _open(self, args) -> str:
+        """Which open proposal an /accept or /reject refers to."""
+        words = [w for w in args if w not in self.FILLER]
+        if not self.proposals:
+            raise ValueError("there's no open proposal")
+        if words:
+            d = self.DIRECTIONS.get(words[0])
+            if d not in self.proposals:
+                raise ValueError(f"no open proposal for '{words[0]}'; open: "
+                                 f"{', '.join(self.proposals)}")
+            return d
+        if len(self.proposals) > 1:
+            raise ValueError("which one? " + " or ".join(self.proposals))
+        return next(iter(self.proposals))
+
+    def _standing(self) -> str:
+        """
+        Look at current proposals and determine participant's vote on them
+        """
+        if not self.proposals:
+            return "No open proposals."
+        parts = []
+        for d, pr in self.proposals.items():
+            t = f"{d} ({pr['by']}): for {', '.join(sorted(pr['agree'])) or 'nobody'}"
+            if pr["disagree"]:
+                t += f"; against {', '.join(sorted(pr['disagree']))}"
+            parts.append(t)
+        return " · ".join(parts) + f" (needs {self.needed()})"
+
+    
+    
     def view(self, p):
         if not self.participants or p not in self.participants:
             return {}
 
-        prop = self.proposal and {"by": self.proposal["by"],
-                                  "dir": self.proposal["dir"],
-                                  "accepted": sorted(self.proposal["accepts"]),
-                                  "needed": self.needed()}
+        proposals = [{"dir": d, "by": pr["by"], "agree": sorted(pr["agree"]),
+                               "disagree": sorted(pr["disagree"])}
+                              for d, pr in self.proposals.items()]
+
 
         return {"participant": p,
                 "size": [len(self.grid), len(self.grid[0])],
@@ -351,7 +404,8 @@ class MazeEngine(TaskEngine):
                 "walls_found": sorted(maze.name(*c) for c in self.walls_found),
                 "lives": self.lives,
                 "moves_left": self.budget - self.moves,
-                "proposal": prop,
+                "proposals": proposals,
+                "needed": self.needed(),
                 "finished": self.finished}
 
     def command(self, p, cmd, args):
@@ -359,45 +413,65 @@ class MazeEngine(TaskEngine):
             raise ValueError("this maze is finished")
 
         if cmd == "go":
-            words = [w for w in args if w not in self.FILLER]
-            if not words:
-                raise ValueError("which way? /go up, down, left or right")
+            d = self._direction(args)
+            if self.needed() == 1:
+                self.proposals = {}
+                return {"notice": f"{p}: {self._move(d)}"}
+            if d in self.proposals:
+                return self._vote(p, d, True)
+            said = f"{p} proposes {d}"
+            if self.rules.proposals == "single" and self.proposals:
+                old_d, old = next(iter(self.proposals.items()))
+                said += f" instead of {old['by']}'s {old_d}"
+                self.proposals = {}
+            self.proposals[d] = {"by": p, "agree": set(), "disagree": set()}
+            return self._vote(p, d, True, said=said)
 
-            d = self.DIRECTIONS.get(words[0])
-            if d is None:
-                close = difflib.get_close_matches(words[0], list(self.DIRECTIONS), n=1)
-                hint = f"Did you mean /go {self.DIRECTIONS[close[0]]}?" if close else \
-                       "Use up, down, left or right"
-                raise ValueError(f"'{words[0]}' isn't a direction.{hint}")
-        dr, dc = maze.DIRS[d]
-        if not maze.inside(self.grid, self.pos[0] + dr, self.pos[1] + dc):
-            raise ValueError(f"can't go {d}: that's the edge of the maze")
-        self.proposal = {"by": p, "dir": d, "accepts": {p}}
-        return self._maybe_move(f"{p} proposes: {d}")
-
-        if not self.proposal:
-            raise ValueError("there's no proposed move")
         if cmd == "accept":
-            self.proposal["accepts"].add(p)
-            return self._maybe_move(f"{p} accepts {self.proposal['dir']}")
+            return self._vote(p, self._open(args), True)
+
+        if cmd == "reject":
+            d = self._open(args)
+            if self.proposals[d]["by"] == p:
+                raise ValueError("it's your proposal; use /cancel to withdraw it")
+            return self._vote(p, d, False)
 
         if cmd == "cancel":
-            if self.proposal["by"] != p:
-                raise ValueError("you can only cancel your own proposal")
+            mine = [d for d, pr in self.proposals.items() if pr["by"] == p]
+            if not mine:
+                raise ValueError("you have no open proposal")
+            for d in mine:
+                del self.proposals[d]
+            return {"notice": f"{p} withdrew their proposal ({', '.join(mine)}). {self._standing()}"}
 
-            d = self.proposal["dir"]
-            self.proposal = None
-            return {"notice": f"{p} withdrew their proposal ({d})"}
+        raise ValueError(f"unknown command /{cmd}")
 
-        raise ValueError(f"unknown comman /{cmd}")
+    def _vote(self, p, d, agree: bool, said: str | None = None) -> dict:
+        pr = self.proposals[d]
+        if said is None:
+            if p in (pr["agree"] if agree else pr["disagree"]):
+                raise ValueError(f"you already {'agree' if agree else 'disagree'} with {d}")
+            changed = p in pr["agree"] or p in pr["disagree"]
+            said = f"{p} {'now ' if changed else ''}{'agrees' if agree else 'disagrees'} with {d}"
+        pr["disagree" if agree else "agree"].discard(p)
+        pr["agree" if agree else "disagree"].add(p)
+        if agree:                                  # one direction each: support moves
+            for other in [o for o in self.proposals if o != d]:
+                op = self.proposals[other]
+                if p in op["agree"]:
+                    op["agree"].discard(p)
+                    if op["by"] == p:
+                        del self.proposals[other]
+                        said += f" (withdrawing their {other})"
+        return self._maybe_move(d, said)
 
-    def _maybe_move(self, said: str) -> dict:
-        have, need = len(self.proposal["accepts"]), self.needed()
-        if have < need:
-            return {"notice": f"{said} ({need - have} more needed)"}
-        d = self.proposal["dir"]
-        self.proposal = None
-        return {"notice": f"{said}. {self._move(d)}"}
+    def _maybe_move(self, d: str, said: str) -> dict:
+        if len(self.proposals[d]["agree"]) < self.needed():
+            return {"notice": f"{said}. {self._standing()}"}
+        others = len(self.proposals) > 1
+        self.proposals = {}
+        cleared = " Other proposals cleared." if others else ""
+        return {"notice": f"{said}. {self._move(d)}{cleared}"}    
 
     def _move(self, d: str) -> str:
         dr, dc = maze.DIRS[d]
@@ -414,24 +488,24 @@ class MazeEngine(TaskEngine):
                 self.pos, self.path = self.start, [self.start]
                 text += " Back to the start."
 
-            else:
-                self.pos = target
-                self.path.append(target)
-                text = f"Moved {d} to {maze.name(*target)}."
-                if target == self.end:
-                    self.finished = "goal"
-                    return text + " Reached the end!"
+        else:
+            self.pos = target
+            self.path.append(target)
+            text = f"Moved {d} to {maze.name(*target)}."
+            if target == self.end:
+                self.finished = "goal"
+                return text + " Reached the end!"
 
-            if self.lives is not None and self.lives <= 0:
-                self.finished = "no_lives"
-                return text + " No lives left."
+        if self.lives is not None and self.lives <= 0:
+            self.finished = "no_lives"
+            return text + " No lives left."
 
-            if self.moves >= self.budget:
-                self.finished = "no_moves"
-                return text + " No moves left."
+        if self.moves >= self.budget:
+            self.finished = "no_moves"
+            return text + " No moves left."
 
-            lives = f" Lives left: {self.lives}." if self.lives is non None else ""
-            return text + lives + f" Moves left: {self.budget - self.moves}."
+        lives = f" Lives left: {self.lives}." if self.lives is not None else ""
+        return text + lives + f" Moves left: {self.budget - self.moves}."
 
     def round_complete(self, status):
         return self.finished is not None
