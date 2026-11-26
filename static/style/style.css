@@ -171,3 +171,12 @@ h2 {
   .tb-card { width: 70px; height: 70px; background: #fff; border: 2px solid transparent;
              border-radius: 6px; cursor: pointer; object-fit: contain; }
   .tb-selected { border-color: #f0a000 !important; box-shadow: 0 0 0 2px #f0a000; }
+
+  .obs-board { display: flex; flex-direction: column; gap: 4px; }
+  .obs-board .tb-slot { cursor: default; }
+  .obs-title { font-size: 0.85em; opacity: 0.8; }
+  .obs-ok  { border: 3px solid #2e7d32 !important; }
+  .obs-bad { border: 3px solid #c62828 !important; }
+  .obs-pool { display: flex; flex-wrap: wrap; gap: 3px; }
+  .obs-pool figure { margin: 0; text-align: center; font-size: 0.7em; }
+  .obs-pool img { width: 40px; height: 40px; background: #fff; object-fit: contain; }

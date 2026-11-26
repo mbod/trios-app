@@ -112,11 +112,13 @@ def chatroom(room_id):
     user_id = request.args.get('user_id')
 
     participants = [user_id] if user_id else ['A','B','C']
-    
+
+    is_experimenter = bool(flask_session.get('admin')) and not request.args.get('user_id')
     
     return render_template('chatroom.html',
                            room=room_id,
                            participants=participants,
+                           experimenter=is_experimenter
                           )
 
 
@@ -384,9 +386,12 @@ def handle_connect(auth):
 
     else:
         user_id = auth.get('user_id')
-        identity = {'id': user_id or f'observer-{sid[:6]}',
-                    'room': auth.get('room') or session.get('room'),
-                    'kind': 'human' if user_id else 'observer'}
+        if user_id:
+            indentity = {'id': user_id, 'room': auth.get('room'), 'kind': 'human'}
+        elif flask_session.get('admin'):
+            identity = {'id': 'Experimenter', 'room': auth.get('room'), 'kind': 'experimenter'}
+        else:
+            identity = {'id': f'observer-{sid[:6]}', 'room': auth.get('room'), 'kind': 'observer'}
 
     room = identity["room"]
 
@@ -425,50 +430,43 @@ def handle_disconnect(reason=None):
 
 @socketio.on('message')
 def handle_message(payload):
-
     client = connected_clients.get(request.sid)
-
-    if not client:
+    if not client or client['kind'] == 'observer':
         return
-
     payload = payload or {}
-    text = str(payload.get('message','')).strip()
-    
-    session = SESSIONS.get(client["room"])
-    if session and not session.round_open():
-        event_log.record(client["room"], "message_rejected", sender=client["id"],
-                         kind=client["kind"], payload={"message": text, "reason": "between_rounds"})
-        emit("message_rejected", {"error": "The next round hasn't started yet"})
-        return
-    
-
-
+    text = str(payload.get('message', '')).strip()
     if not text:
         return
 
+    session = SESSIONS.get(client['room'])
+    if session and not session.round_open():
+        event_log.record(client['room'], "message_rejected", sender=client['id'],
+                         kind=client['kind'], payload={"message": text, "reason": "between_rounds"})
+        emit("message_rejected", {"error": "The next round hasn't started yet"})
+        return
 
-    logged = {'message': text, "turn_id": payload.get("turn_id")}
-    context_seq = payload.get('context_seq')
+    lines = text.splitlines()
+    commands = [l.strip() for l in lines if l.strip().startswith('/')]
+    chat = "\n".join(l for l in lines if not l.strip().startswith('/')).strip()
 
-    if isinstance(context_seq, int):
-        logged['context_seq'] = context_seq
+    if chat:
+        logged = {'message': chat, 'turn_id': payload.get('turn_id')}
+        if isinstance(payload.get('context_seq'), int):
+            logged['context_seq'] = payload['context_seq']
+        event = event_log.record(client['room'], 'message', sender=client['id'],
+                                 kind=client['kind'], payload=logged)
+        if session and client['kind'] != 'experimenter':
+            session.on_message()
+        emit('message', {'from': client['id'], 'message': chat,
+                         'seq': event['seq'], 'ts': event['ts']}, to=client['room'])
 
-    
-    # message
-    sender = client['id']
-    event = event_log.record(client['room'], 'message',
-                             sender=sender,
-                             kind=client['kind'],
-                             payload=logged)
-    
+    if commands and session and client['kind'] in ('human', 'agent'):
+        for command in commands:
+            session.on_command(client['id'], client['kind'], command)
 
-    if (session := SESSIONS.get(client['room'])):
-        session.on_message()
-    
-    emit('message', { 'from': sender, 'message': text,
-                      'seq': event['seq'], 'ts': event['ts']},
-         to=client['room'])
 
+
+        
 @socketio.on('typing')
 def handle_type(payload):
     '''

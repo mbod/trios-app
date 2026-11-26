@@ -8,12 +8,16 @@ decides when a round is complete and scores it.
 
 
 import string
+import difflib
 
 from tasks import Task, StimulusSet, Rules
-
-
+import maze
 
 class TaskEngine:
+
+    COMMANDS: dict[str, tuple[str, ...]] = {}
+    HELP = ""
+    
     def __init__(self, task: Task, stimuli_name: str, stimuli: StimulusSet, rules: Rules):
         self.task = task
         self.stimuli_name = stimuli_name
@@ -85,6 +89,34 @@ class TaskEngine:
         return {p: {} for p in status}
 
 
+    def resolve(self, word: str) -> str | None:
+        for cm, aliases in self.COMMANDS.items():
+            if word == cmd or word in aliases:
+                return cmd
+        return None
+
+    def command_words(self) -> list[str]:
+        return [w for cmd, aliases in self.COMMANDS.items() for w in (cmd, *aliases)]
+
+    def command(self, p: str, cmd: str, args: list[str]) -> dict:
+        """
+        Apply a typed command.
+        - returns
+           {"feedback": ..., "notice": ...}
+        - raises
+           ValueError
+        """
+        raise ValueError("this task has no commands")
+
+    def _ordered(self, ids: list[str], rng) -> list[str]:
+        if self.rules.order == "shuffled":
+            rng.shuffle(ids)
+        if self.rules.rounds in not None:
+            if self.rules.rounds > len(ids):
+                raise ValueError(f"{self.rules.rounds} rounds requested; "
+                                 f"{self.stimuli_name} has {len(ids)}")
+            ids = ids[:self.rules.rounds]
+        return ids
 
 class ChoiceEngine(TaskEngine):
     """
@@ -93,16 +125,7 @@ class ChoiceEngine(TaskEngine):
     """
 
     def plan_rounds(self, rng):
-        order = list(self.stimuli.rounds)
-        if self.rules.order == "shuffled":
-            rng.shuffle(order)
-        if self.rules.rounds is not None:
-            if self.rules.rounds > len(order):
-                raise ValueError(f"{self.rules.rounds} rounds requested; "
-                                 f"{self.stimuli_name} has {len(order)}")
-            order = order[:self.rules.rounds]
-
-        return order
+        return self._ordered(list(self.stimuli.rounds), rng)
     
     def materials(self):
         return {p: self.task.material_url(self.stimuli_name, self.round_id, p)
@@ -248,9 +271,185 @@ class MatchingEngine(TaskEngine):
             out[m] = {"role": "matcher", "board": placed, "of": self.size,
                       "correct_slots": sum(a == b for a, b in zip(placed, self.target))}
         return out 
-            
+
+
+
+class MazeEngine(TaskEngine):
+    """
+    A shared token moves through a maze.
+    Each participant knows some of the cells.
+    Moves are proposed and accepted under the decision rule
+    """
+
+    COMMANDS = {
+                "go": ("move", "m"),
+                "accept": ("yes", "ok", "agree"),
+                "reject": ("no", "disagree"),
+                "cancel": ()
+                }
+
+    DIRECTIONS = {"up": "up", "u": "up", "north": "up", "n": "up",
+                  "down": "down", "d": "down", "south": "down",
+                  "left": "left", "l": "left", "west": "left", "w": "left",
+                  "right": "right", "r": "right", "east": "right", "e": "right"}
+
+    FILLER = {"to", "the", "a", "one", "step", "please", "go", "move"}
+
+    HELP = ("/go up|down|left|right   propose a move (also /move, /m)\n"
+            "/accept                   agree to the proposed move\n"
+            "/reject                   turn down the proposed move\n"
+            "/cancel                   withdraw your own proposal\n"
+            "/help                     show this list")
+
+
+    def plan_rounds(self, rng):
+        return self._ordered(list(self.stimuli.mazes), rng)
+
+    def setup_round(self, round_no, round_id, participants, rng):
+        super().setup_round(round_no, round_id, participants, rng)
+        spec = self.stimuli.mazes[round_id]
+        self.grid = maze.parse_grid(spec["grid"])
+        self.start, self.end = maze.find(self.grid, "s"), maze.find(self.grid, "e")
+        self.shortest = len(maze.shortest_path(self.grid)) - 1
+        known = spec.get("known") or {}
+        self.known = {p: {maze.cell(t) for t in known.get(p, [])} | {self.start, self.end}
+                       for p in participants}
+        self.pos, self.path = self.start, [self.start]
+        self.walls_found = set()
+        self.moves = self.bumps = 0
+        self.lives = self.rules.lives
+        self.budget = self.shortest + self.rules.extra_moves
+        self.proposal = None
+        self.finished = None
+
+    def setup_log(self):
+        return {"shortest": self.shortest, "budget": self.budget,
+                "known": {p: sorted(maze.name(*c) for c in cs)
+                             for p, cs in self.known.items()}
+                }
+
+    def needed(self) -> int:
+        n = len(self.participants)
+        return {"single": 1,
+                "majority": n // 2 + 1,
+                "all": n}[self.rules.decide]
+
+    def view(self, p):
+        if not self.participants or p not in self.participants:
+            return {}
+
+        prop = self.proposal and {"by": self.proposal["by"],
+                                  "dir": self.proposal["dir"],
+                                  "accepted": sorted(self.proposal["accepts"]),
+                                  "needed": self.needed()}
+
+        return {"participant": p,
+                "size": [len(self.grid), len(self.grid[0])],
+                "known": {maze.name(r,c): self.grid[r][c] for r, c in sorted(self.known[p])},
+                "position": maze.name(*self.pos),
+                "path": [maze.name(*c) for c in self.path],
+                "walls_found": sorted(maze.name(*c) for c in self.walls_found),
+                "lives": self.lives,
+                "moves_left": self.budget - self.moves,
+                "proposal": prop,
+                "finished": self.finished}
+
+    def command(self, p, cmd, args):
+        if self.finished:
+            raise ValueError("this maze is finished")
+
+        if cmd == "go":
+            words = [w for w in args if w not in self.FILLER]
+            if not words:
+                raise ValueError("which way? /go up, down, left or right")
+
+            d = self.DIRECTIONS.get(words[0])
+            if d is None:
+                close = difflib.get_close_matches(words[0], list(self.DIRECTIONS), n=1)
+                hint = f"Did you mean /go {self.DIRECTIONS[close[0]]}?" if close else \
+                       "Use up, down, left or right"
+                raise ValueError(f"'{words[0]}' isn't a direction.{hint}")
+        dr, dc = maze.DIRS[d]
+        if not maze.inside(self.grid, self.pos[0] + dr, self.pos[1] + dc):
+            raise ValueError(f"can't go {d}: that's the edge of the maze")
+        self.proposal = {"by": p, "dir": d, "accepts": {p}}
+        return self._maybe_move(f"{p} proposes: {d}")
+
+        if not self.proposal:
+            raise ValueError("there's no proposed move")
+        if cmd == "accept":
+            self.proposal["accepts"].add(p)
+            return self._maybe_move(f"{p} accepts {self.proposal['dir']}")
+
+        if cmd == "cancel":
+            if self.proposal["by"] != p:
+                raise ValueError("you can only cancel your own proposal")
+
+            d = self.proposal["dir"]
+            self.proposal = None
+            return {"notice": f"{p} withdrew their proposal ({d})"}
+
+        raise ValueError(f"unknown comman /{cmd}")
+
+    def _maybe_move(self, said: str) -> dict:
+        have, need = len(self.proposal["accepts"]), self.needed()
+        if have < need:
+            return {"notice": f"{said} ({need - have} more needed)"}
+        d = self.proposal["dir"]
+        self.proposal = None
+        return {"notice": f"{said}. {self._move(d)}"}
+
+    def _move(self, d: str) -> str:
+        dr, dc = maze.DIRS[d]
+        target = (self.pos[0] + dr, self.pos[1] + dc)       # the resulting position of selected move
+        self.moves +=1
+        if self.grid[target[0]][target[1]] == "x":          # check for collision with wall 'x'
+            self.bumps += 1
+            if self.rules.wall_reveal == "all":
+                self.walls_found.add(target)
+            if self.lives is not None:
+                self.lives -= 1
+            text = f"Moved {d}: hit a wall at {maze.name(*target)}."
+            if self.rules.on_wall == "restart":                 # restart maze after collision
+                self.pos, self.path = self.start, [self.start]
+                text += " Back to the start."
+
+            else:
+                self.pos = target
+                self.path.append(target)
+                text = f"Moved {d} to {maze.name(*target)}."
+                if target == self.end:
+                    self.finished = "goal"
+                    return text + " Reached the end!"
+
+            if self.lives is not None and self.lives <= 0:
+                self.finished = "no_lives"
+                return text + " No lives left."
+
+            if self.moves >= self.budget:
+                self.finished = "no_moves"
+                return text + " No moves left."
+
+            lives = f" Lives left: {self.lives}." if self.lives is non None else ""
+            return text + lives + f" Moves left: {self.budget - self.moves}."
+
+    def round_complete(self, status):
+        return self.finished is not None
+
+    def score(self, status):
+        result = {"finished": self.finished,
+                  "reached_end": self.finished == "goal",
+                  "moves": self.moves,
+                  "bumps": self.bumps,
+                  "shortest": self.shortest,
+                  "path": [maze.name(*c) for c in self.path]}
+        return {p: dict(result) for p in status}
+    
+
+        
 ENGINES = {
     "choice": ChoiceEngine,
-    "matching": MatchingEngine
+    "matching": MatchingEngine,
+    "maze": MazeEngine
 }
 

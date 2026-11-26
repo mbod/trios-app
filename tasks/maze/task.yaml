@@ -1,0 +1,19 @@
+name: maze
+description: Find the way through a maze together; each of you knows part of it.
+participants: [A, B, C]
+engine: maze
+materials: svg
+actions:
+  say: say something in the chat
+  wait: wait silently
+  task_complete: signal that you think the group is finished
+  withdraw: take back your done signal
+rules:
+  rounds: 1
+  require_answer: false
+  time_limit: 600
+  decide: single
+  on_wall: stay
+  lives: 3
+  extra_moves: 4
+  wall_reveal: none

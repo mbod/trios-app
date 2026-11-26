@@ -21,7 +21,7 @@ from importlib import metadata
 import subprocess
 from pathlib import Path
 import requests
-
+import difflib
 import hashlib
 
 from engine import ENGINES
@@ -343,18 +343,65 @@ class Session:
         return None
 
 
+    def _send_to(self, participant: str, event: str, payload: dict):
+        """To one participant, plus observers and the experimenter."""
+        for sid, c in list(self.clients.items()):
+            if c["room"] == self.room and (c["id"] == participant
+                                           or c["kind"] in ("observer", "experimenter")):
+                self.socketio.emit(event, payload, to=sid)
+
     def _send_view(self, participant: str, view: dict):
-        """
-        A participant's private view: to them and to observers only
-        """
-        if not view:
+        if view:
+            self._send_to(participant, "task_view", view)
+
+
+    def on_command(self, participant: str, kind: str, text: str):
+        """A typed command (a chat line starting with '/')."""
+        words = text.lstrip("/").lower().split()
+        if not words:
+            return
+        word, args = words[0], words[1:]
+
+        if word in ("done", "undone"):
+            error = self.on_status(participant, kind, word == "done", None)
+            self._send_to(participant, "command_feedback", {
+                "participant": participant, "ok": not error,
+                "text": error or ("You signalled done." if word == "done" else "Done withdrawn.")})
             return
 
-        for sid, c in list(self.clients.items()):
-            if c["room"] == self.room and (c["id"] == participant or c["kind"] == "observer"):
-                self.socketio.emit("task_view", view, to=sid)
-                
-                                                
+        cmd = self.engine.resolve(word)
+        notice, feedback, ok = None, None, False
+        with self.lock:
+            if self.round_no is None:
+                feedback = "no round in progress"
+            elif participant not in self.status:
+                feedback = "only participants can use commands"
+            elif word == "help":
+                feedback, ok = self.engine.HELP or "This task has no commands.", True
+            elif cmd is None:
+                close = difflib.get_close_matches(word, self.engine.command_words() + ["help", "done"], n=1)
+                feedback = f"Didn't understand '{text}'." + (f" Did you mean /{close[0]}?" if close else
+                                                             " Type /help for the list.")
+            else:
+                try:
+                    result = self.engine.command(participant, cmd, args)
+                    ok = True
+                    feedback, notice = result.get("feedback"), result.get("notice")
+                except ValueError as e:
+                    feedback = str(e)
+            views = {p: self.engine.view(p) for p in self.condition.participants} if ok else {}
+
+        self.log.record(self.room, "command", sender=participant, kind=kind,
+                        payload={"text": text, "command": cmd, "args": args,
+                                 "ok": ok, "feedback": feedback})
+        if feedback:
+            self._send_to(participant, "command_feedback",
+                          {"participant": participant, "ok": ok, "text": feedback})
+        if notice:
+            self.log.record(self.room, "notice", payload={"text": notice})
+            self.socketio.emit("notice", {"text": notice}, to=self.room)
+        for p, v in views.items():
+            self._send_view(p, v)            
             
     # --- agents -----------------------
 
@@ -520,8 +567,11 @@ class Session:
                     None if self.rules.time_limit is None else
                     max(0, round(self.rules.time_limit - (time.monotonic() - self.round_started_at))))
 
-                if participant:
+                if participant in self.conditions.participants:
                     state["view"] = self.engine.view(participant)
+                else:
+                    state["view"] = {p: v for p in self.condition.participants
+                                        if (v := self.engine.view(p))}
                 
         return state
      

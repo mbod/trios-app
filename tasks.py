@@ -9,6 +9,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, PrefixLoader,
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from config import NAME_PATTERN
+import maze
 
 TASK_DIR = Path(__file__).resolve().parent / "tasks"
 REQUIRED_ACTIONS = {"wait", "task_complete", "withdraw"}
@@ -47,6 +48,13 @@ class Rules(BaseModel):
     grid: tuple[int, int] = (3,3)
     director: str = "A"
     trial_end: Literal["all_done", "first_done"] = "all_done"
+
+    # maze settings
+    decide: Literal["single", "majority", "all"] = "single"
+    on_wall: Literal["stay", "restart"] = "stay"
+    lives: int | None = 3
+    extra_moves: int = 4
+    wall_reveal: Literal["none", "all"] = "none"
     
 class StimulusSet(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -54,7 +62,7 @@ class StimulusSet(BaseModel):
     framing: str = ""
     rounds: dict[str, list[str]] = {}
     figures: list[str] = []
-
+    mazes: dict[str, dict] = {}
 
 class Placement(BaseModel):
     card: str = Field(description="the letter of one of your cards")
@@ -71,7 +79,7 @@ class TaskDef(BaseModel):
     materials: Literal["svg", "html"] = "html"
     answer: AnswerSpec | None = None
     rules: Rules = Field(default_factory=Rules)
-    engine: Literal["choice", "matching"] = "choice"
+    engine: Literal["choice", "matching", "maze"] = "choice"
 
 
     
@@ -163,6 +171,18 @@ class Task:
         if not path.is_file():
             raise ValueError(f"no stimulus set at {folder}")
 
+
+        if self.defn.engine == "maze":
+            for mid, spec in stim.mazes.items():
+                if not NAME_PATTERN.match(mid):
+                    raise ValueError(f"{set_name}: invalid maze name '{mid}'")
+                try:
+                    maze.check(spec, self.defn.participants)
+                except ValueError as e:
+                    raise ValueError(f"{set_name}, {mid}: {e}") from None
+            return stim
+                    
+        
         with open(path) as f:
             stim = StimulusSet(**(yaml.safe_load(f) or {}))
 

@@ -27,6 +27,7 @@
     {% for part in participants %}
     <div class="from{{part}} stimImage">
       <img id="stim-{{part}}" alt="Image for participant {{part}}" hidden>
+      <div class="obs-board" id="obs-board-{{part}}"></div>
     </div>
     {% endfor %}
 
@@ -50,6 +51,14 @@
     </div>
     {% endif %}
 
+    <!-- admin experimenter view -->
+    {% if participants|length != 1 and experimenter %}
+    <div id="message-box">
+      <textarea id="exp-input" rows="2" placeholder="Message as Experimenter"></textarea>
+      <button type="button" id="exp-send">Send</button>
+    </div>
+    {% endif %}
+    
 	
   </div>
 
@@ -278,10 +287,92 @@
       socketio.on('action_error', (e) => notice(e.error));
 
 
+      {% else %}
 
+      /* ---- OBSERVER BOARDS (read only) ---- */
+      const obsViews = {};
+
+      function obsSlot(n, url, mark) {
+        const el = document.createElement('div');
+        el.className = 'tb-slot' + (mark ? ' ' + mark : '');
+        if (url) { const i = document.createElement('img'); i.src = url; el.appendChild(i); }
+        const num = document.createElement('span');
+        num.className = 'tb-num';
+        num.textContent = n;
+        el.appendChild(num);
+        return el;
+      }
+
+      function renderObserver() {
+        const target = Object.values(obsViews).find(v => v.role === 'director')?.target;
+        for (const v of Object.values(obsViews)) {
+          const box = document.getElementById('obs-board-' + v.participant);
+          if (!box) continue;
+          document.getElementById('stim-' + v.participant).hidden = true;
+          box.replaceChildren();
+          const title = document.createElement('div');
+          title.className = 'obs-title';
+          title.textContent = `${v.participant}: ${v.role}`;
+          const grid = document.createElement('div');
+          grid.className = 'tb-grid';
+          grid.style.gridTemplateColumns = `repeat(${v.grid[1]}, 1fr)`;
+
+          if (v.role === 'director') {
+            v.target.forEach((url, i) => grid.appendChild(obsSlot(i + 1, url)));
+            box.append(title, grid);
+            continue;
+          }
+          v.slots.forEach((card, i) => {
+            const url = card ? v.cards[card] : null;
+            const mark = url && target ? (url === target[i] ? 'obs-ok' : 'obs-bad') : '';
+            grid.appendChild(obsSlot(i + 1, url, mark));
+          });
+          const pool = document.createElement('div');
+          pool.className = 'obs-pool';
+          v.pool.forEach(c => {
+            const fig = document.createElement('figure');
+            const i = document.createElement('img');
+            i.src = v.cards[c];
+            const cap = document.createElement('figcaption');
+            cap.textContent = c;
+            fig.append(i, cap);
+            pool.appendChild(fig);
+          });
+          box.append(title, grid, pool);
+        }
+      }
+
+      function clearObserver() {
+        for (const k of Object.keys(obsViews)) delete obsViews[k];
+        document.querySelectorAll('.obs-board').forEach(b => b.replaceChildren());
+      }
+
+      socketio.on('task_view', v => { obsViews[v.participant] = v; renderObserver(); });
+      socketio.on('session_state', s => {
+        if (s.views) { Object.assign(obsViews, s.views); renderObserver(); }
+      });
+      socketio.on('round_end', clearObserver);
+
+      const expSend = document.getElementById('exp-send');
+      if (expSend) {
+        const box = document.getElementById('exp-input');
+        const send = () => {
+          const text = box.value.trim();
+          if (!text) return;
+          socketio.emit('message', { message: text });
+          box.value = '';
+        };
+        expSend.addEventListener('click', send);
+        box.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+        });
+      }      
       
       
       {% endif %}
+
+
+      /* --------- END OF PARTICIPANT BLOCK ------ */
 
 
       function setChatOpen(open, note) {
