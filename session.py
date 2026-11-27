@@ -50,7 +50,7 @@ TASK_DIR = Path(__file__).resolve().parent / "tasks"
 class Session:
 
     def __init__(self, socketio, event_log, clients, room, session_id,
-                 condition_name, task_name, stimuli_name, overrides, meta):
+                 condition_name, task_name, stimuli_name, variant, overrides, meta):
 
         self.socketio = socketio
         self.log = event_log
@@ -64,8 +64,6 @@ class Session:
         self.stimuli_name = stimuli_name
         self.stimuli = self.task.stimuli(stimuli_name)
 
-        variant: str = ""
-        
         defn = self.task.defn
         if variant and variant not in defn.variants:
             raise ValueError(f"task {defn.name} has no variant '{variant}'; "
@@ -373,7 +371,7 @@ class Session:
             self._send_to(participant, "task_view", view)
 
 
-    def on_command(self, participant: str, kind: str, text: str):
+    def on_command(self, participant: str, kind: str, text: str, msg_seq=None):
         """A typed command (a chat line starting with '/')."""
         words = text.lstrip("/").lower().split()
         if not words:
@@ -411,7 +409,7 @@ class Session:
 
         self.log.record(self.room, "command", sender=participant, kind=kind,
                         payload={"text": text, "command": cmd, "args": args,
-                                 "ok": ok, "feedback": feedback})
+                                 "ok": ok, "feedback": feedback, "msg_seq": msg_seq})
         if feedback:
             self._send_to(participant, "command_feedback",
                           {"participant": participant, "ok": ok, "text": feedback})
@@ -585,14 +583,16 @@ class Session:
                     None if self.rules.time_limit is None else
                     max(0, round(self.rules.time_limit - (time.monotonic() - self.round_started_at))))
 
-                if participant in self.conditions.participants:
+                if participant in self.condition.participants:
                     state["view"] = self.engine.view(participant)
                 else:
                     state["view"] = {p: v for p in self.condition.participants
                                         if (v := self.engine.view(p))}
                 
         return state
-     
+
+    def command_words(self) -> set[str]:
+        return set(self.engine.command_words()) | {"help", "done", "undone"}
     
 
     def _check_answer(self, answer) -> str | None:

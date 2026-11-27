@@ -31,7 +31,7 @@ COMMON_RULES = {"order", "rounds", "pause_between_rounds", "clear_chat_between_r
                 "time_limit", "message_limit", "warning_before_end", "require_answer" }
 
 # specific rules depending on the kind of engine used for task
-ENGINE_ROOMS = {
+ENGINE_RULES = {
     "choice":   COMMON_RULES | {"require_agreement", "selection_visibility"},
     "matching": COMMON_RULES | {"grid", "director", "trial_end" },
     "maze":     COMMON_RULES | {"decide", "proposals", "on_wall", "lives", "extra_moves",

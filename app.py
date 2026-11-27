@@ -32,6 +32,7 @@ from pydantic import ValidationError
 from config import NAME_PATTERN, list_conditions, load_condition, describe_condition
 from tasks import TASK_DIR, task_catalogue
 from session import SESSIONS, Session
+from commands import split_message
 
 _ = load_dotenv()
 
@@ -453,26 +454,29 @@ def handle_message(payload):
         emit("message_rejected", {"error": "The next round hasn't started yet"})
         return
 
-    lines = text.splitlines()
-    commands = [l.strip() for l in lines if l.strip().startswith('/')]
-    chat = "\n".join(l for l in lines if not l.strip().startswith('/')).strip()
+    # if message from human or agent parse any commands into data structure
+    acting = session is not None and client['kind'] in ('human', 'agent')
+    segments = split_message(text, session.command_words()) if acting else [{"text": text}]
+    commands = [s["text"].strip() for s in segments if s.get("cmd")]
+    talk = "".join(s["text"] for s in segments if not s.get("cmd")).strip()
 
-    if chat:
-        logged = {'message': chat, 'turn_id': payload.get('turn_id')}
-        if isinstance(payload.get('context_seq'), int):
-            logged['context_seq'] = payload['context_seq']
-        event = event_log.record(client['room'], 'message', sender=client['id'],
-                                 kind=client['kind'], payload=logged)
-        if session and client['kind'] != 'experimenter':
-            session.on_message()
-        emit('message', {'from': client['id'], 'message': chat,
-                         'seq': event['seq'], 'ts': event['ts']}, to=client['room'])
+    logged = {'message': text, 'segments': segments, 'turn_id': payload.get('turn_id')}
+    if isinstance(payload.get('context_seq'), int):
+        logged['context_seq'] = payload['context_seq']
 
-    if commands and session and client['kind'] in ('human', 'agent'):
-        for command in commands:
-            session.on_command(client['id'], client['kind'], command)
+    event = event_log.record(client['room'], 'message', sender=client['id'],
+                             kind=client['kind'], payload=logged)
 
+    if session and talk and client['kind'] != 'experimenter':
+        session.on_message()
 
+    emit('message', {'from': client['id'], 'message': text, 'segments': segments,
+                     'seq': event['seq'], 'ts': event['ts']}, to=client['room'])
+
+    # emit commands from parsed text data structure
+    for command in commands:
+        session.on_command(client['id'], client['kind'], command, msg_seq=event['seq'])
+                   
 
         
 @socketio.on('typing')

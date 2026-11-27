@@ -60,6 +60,11 @@
   .system-line { font-style: italic; font-size: 13px; margin: 2px 8px; color: #ccc; }
   .sys-error { color: #ff8a80; }
   .sys-ok { color: #a5d6a7; }
+
+
+  .message .cmd { font-family: monospace; font-weight: 600; background: rgba(0,0,0,0.22);
+                  padding: 0 4px; border-radius: 3px; }
+  
 </style>
 
 <div id="top-bar">
@@ -377,9 +382,15 @@
         const board = document.getElementById('task-board');
         board.replaceChildren();
         board.hidden = false;
+        document.querySelectorAll('.stimImage').forEach(d => d.hidden = true);
         document.getElementById('done-panel').hidden = true;
 
         const live = inRound && !v.finished;
+
+        const pad = document.createElement('div');
+        pad.className = 'mz-controls';
+        for (const d of ['up', 'left', 'right', 'down'])
+          pad.appendChild(mzButton(`${ARROWS[d]} ${d}`, `/go ${d}`, live, 'mz-' + d));
 
         const votes = document.createElement('div');
         votes.className = 'mz-votes';
@@ -394,21 +405,10 @@
             mzButton('Disagree', `/reject ${pr.dir}`, live && !mine && !pr.disagree.includes(from)));
           if (mine) row.append(mzButton('Cancel', '/cancel', live));
           votes.appendChild(row);
-        }	
-
-        const pad = document.createElement('div');
-        pad.className = 'mz-controls';
-        for (const d of ['up', 'left', 'right', 'down'])
-          pad.appendChild(mzButton(`${ARROWS[d]} ${d}`, `/go ${d}`, live, 'mz-' + d));
-
-
-        votes.className = 'mz-votes';
-        votes.append(mzButton('Accept', '/accept', live && p && !accepted),
-                     mzButton('Reject', '/reject', live && p && !mine),
-                     mzButton('Cancel', '/cancel', live && mine));
+        }
 
         board.append(label('Maze'), mazeGrid(v), mazeStatus(v), pad, votes);
-      }
+      }      
 
       function renderTask(v) {
         if (!v) return;
@@ -673,23 +673,26 @@
 	  typers.delete(message.from);
 	  renderTypers();
 	  console.log('WS: "message" ' + message.from + ' ' + message.message);
-	  createChatItem(message.message, message.from)
+	  createChatItem(message.message, message.from, message.segments)
       });
 
 
-
-    function createChatItem(message, sender) {
-
-      console.log(`${sender}: ${message}`);
-
+    function createChatItem(message, sender, segments) {
 	const messages = document.getElementById("messages");
 	const p = document.createElement("p");
 	p.className = `message from${sender}`;
-	p.textContent = `${sender}: ${message}`;
-
+	p.append(`${sender}: `);
+	for (const s of (segments && segments.length ? segments : [{text: message}])) {
+	    if (s.cmd) {
+		const c = document.createElement("span");
+		c.className = "cmd";
+		c.textContent = s.text;
+		p.append(c);
+	    } else {
+		p.append(s.text);
+	    }
+	}
         messages.appendChild(p);
-
-	// Keep inbox scrolled to bottom
 	messages.scrollTop = messages.scrollHeight;
     }
 

@@ -338,15 +338,19 @@ class MazeEngine(TaskEngine):
                 "majority": n // 2 + 1,
                 "all": n}[self.rules.decide]
 
+    def _first_direction(self, args):
+        words = [w.strip(".,;!?") for w in args if w not in self.FILLER][:4]
+        return next((self.DIRECTIONS[w] for w in words if w in self.DIRECTIONS), None)
+    
+        
     def _direction(self, args) -> str:
         """
         Extract direction from a move/go command
         """
-        words = [w for w in args if w not in self.FILLER]
-        if not words:
-            raise ValueError("which way? /go up, down, left or right")
-        d = self.DIRECTIONS.get(words[0])
+        d, words = self._first_direction(args)
         if d is None:
+            if not words:
+                raise ValueError("which way? /go up, down, left or right")
             close = difflib.get_close_matches(words[0], list(self.DIRECTIONS), n=1)
             hint = (f" Did you mean /go {self.DIRECTIONS[close[0]]}?" if close
                     else " Use up, down, left or right.")
@@ -358,19 +362,17 @@ class MazeEngine(TaskEngine):
 
     def _open(self, args) -> str:
         """Which open proposal an /accept or /reject refers to."""
-        words = [w for w in args if w not in self.FILLER]
         if not self.proposals:
             raise ValueError("there's no open proposal")
-        if words:
-            d = self.DIRECTIONS.get(words[0])
+        d, _ = self._first_direction(args)
+        if d is not None:
             if d not in self.proposals:
-                raise ValueError(f"no open proposal for '{words[0]}'; open: "
-                                 f"{', '.join(self.proposals)}")
+                raise ValueError(f"no open proposal for {d}; open: {', '.join(self.proposals)}")
             return d
         if len(self.proposals) > 1:
             raise ValueError("which one? " + " or ".join(self.proposals))
         return next(iter(self.proposals))
-
+    
     def _standing(self) -> str:
         """
         Look at current proposals and determine participant's vote on them
