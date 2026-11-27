@@ -593,7 +593,16 @@ class Session:
 
     def command_words(self) -> set[str]:
         return set(self.engine.command_words()) | {"help", "done", "undone"}
-    
+
+    def takes(self, verb: str, word: str) -> bool:
+        """
+        Check whether `verb` command expected to have argument
+        e.g. /go right where right is the arg
+
+        Specific to task engine
+        """
+        cmd = self.engine.resolve(verb)
+        return cmd is not None and self.engine.takes_arg(cmd, word)
 
     def _check_answer(self, answer) -> str | None:
         spec = self.task.defn.answer

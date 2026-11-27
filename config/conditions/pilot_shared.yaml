@@ -1,6 +1,6 @@
 description: Pilot, selections visible to everyone
 participants:
-   A:
+   C:
       model: openai:gpt-6-luna
       model_settings: {reasoning_effort: low}
       max_words: 12
@@ -15,6 +15,4 @@ participants:
       cooldown_after_reply: [0,2]
       perception: raw
       
-   C: human
-rules:
-   selection_visibility: live
+   A: human

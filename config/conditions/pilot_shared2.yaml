@@ -14,5 +14,3 @@ participants:
       perception: image
       
    C: human
-rules:
-   selection_visibility: live

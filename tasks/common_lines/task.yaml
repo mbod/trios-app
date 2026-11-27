@@ -44,3 +44,7 @@ rules:
    warning_before_end: 60
    require_answer: true
    require_agreement: false
+
+variants:
+   shared:  {selection_visibility: live}
+   on_done: {selection_visibility: on_done}

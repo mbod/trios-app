@@ -456,7 +456,7 @@ def handle_message(payload):
 
     # if message from human or agent parse any commands into data structure
     acting = session is not None and client['kind'] in ('human', 'agent')
-    segments = split_message(text, session.command_words()) if acting else [{"text": text}]
+    segments = (split_message(text, session.command_words(), session.takes) if acting else [{"text": text}])
     commands = [s["text"].strip() for s in segments if s.get("cmd")]
     talk = "".join(s["text"] for s in segments if not s.get("cmd")).strip()
 

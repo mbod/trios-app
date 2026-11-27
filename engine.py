@@ -13,6 +13,9 @@ import difflib
 from tasks import Task, StimulusSet, Rules
 import maze
 
+class CommandError(ValueError):
+    """A problem with what the participant typed; its text is shown to them."""
+
 class TaskEngine:
 
     COMMANDS: dict[str, tuple[str, ...]] = {}
@@ -98,6 +101,14 @@ class TaskEngine:
     def command_words(self) -> list[str]:
         return [w for cmd, aliases in self.COMMANDS.items() for w in (cmd, *aliases)]
 
+    def takes_arg(self, cmd: str, word: str) -> bool:
+        """
+        Is word part of this command's arguments?
+        Default - everything up to the clause end
+        """
+        return True
+
+    
     def command(self, p: str, cmd: str, args: list[str]) -> dict:
         """
         Apply a typed command.
@@ -340,8 +351,9 @@ class MazeEngine(TaskEngine):
 
     def _first_direction(self, args):
         words = [w.strip(".,;!?") for w in args if w not in self.FILLER][:4]
-        return next((self.DIRECTIONS[w] for w in words if w in self.DIRECTIONS), None)
-    
+        return next((self.DIRECTIONS[w] for w in words if w in self.DIRECTIONS), None), words
+
+
         
     def _direction(self, args) -> str:
         """
@@ -350,27 +362,27 @@ class MazeEngine(TaskEngine):
         d, words = self._first_direction(args)
         if d is None:
             if not words:
-                raise ValueError("which way? /go up, down, left or right")
+                raise CommandError("which way? /go up, down, left or right")
             close = difflib.get_close_matches(words[0], list(self.DIRECTIONS), n=1)
             hint = (f" Did you mean /go {self.DIRECTIONS[close[0]]}?" if close
                     else " Use up, down, left or right.")
-            raise ValueError(f"'{words[0]}' isn't a direction.{hint}")
+            raise CommandError(f"'{words[0]}' isn't a direction.{hint}")
         dr, dc = maze.DIRS[d]
         if not maze.inside(self.grid, self.pos[0] + dr, self.pos[1] + dc):
-            raise ValueError(f"can't go {d}: that's the edge of the maze")
+            raise CommandError(f"can't go {d}: that's the edge of the maze")
         return d
 
     def _open(self, args) -> str:
         """Which open proposal an /accept or /reject refers to."""
         if not self.proposals:
-            raise ValueError("there's no open proposal")
+            raise CommandError("there's no open proposal")
         d, _ = self._first_direction(args)
         if d is not None:
             if d not in self.proposals:
-                raise ValueError(f"no open proposal for {d}; open: {', '.join(self.proposals)}")
+                raise CommandError(f"no open proposal for {d}; open: {', '.join(self.proposals)}")
             return d
         if len(self.proposals) > 1:
-            raise ValueError("which one? " + " or ".join(self.proposals))
+            raise CommandError("which one? " + " or ".join(self.proposals))
         return next(iter(self.proposals))
     
     def _standing(self) -> str:
@@ -410,6 +422,9 @@ class MazeEngine(TaskEngine):
                 "needed": self.needed(),
                 "finished": self.finished}
 
+    def takes_arg(self, cmd, word):
+        return cmd in ("go", "accept", "reject") and (word in self.DIRECTIONS or word in self.FILLER)
+    
     def command(self, p, cmd, args):
         if self.finished:
             raise ValueError("this maze is finished")
@@ -435,24 +450,24 @@ class MazeEngine(TaskEngine):
         if cmd == "reject":
             d = self._open(args)
             if self.proposals[d]["by"] == p:
-                raise ValueError("it's your proposal; use /cancel to withdraw it")
+                raise CommandError("it's your proposal; use /cancel to withdraw it")
             return self._vote(p, d, False)
 
         if cmd == "cancel":
             mine = [d for d, pr in self.proposals.items() if pr["by"] == p]
             if not mine:
-                raise ValueError("you have no open proposal")
+                raise CommandError("you have no open proposal")
             for d in mine:
                 del self.proposals[d]
             return {"notice": f"{p} withdrew their proposal ({', '.join(mine)}). {self._standing()}"}
 
-        raise ValueError(f"unknown command /{cmd}")
+        raise CommandError(f"unknown command /{cmd}")
 
     def _vote(self, p, d, agree: bool, said: str | None = None) -> dict:
         pr = self.proposals[d]
         if said is None:
             if p in (pr["agree"] if agree else pr["disagree"]):
-                raise ValueError(f"you already {'agree' if agree else 'disagree'} with {d}")
+                raise CommandError(f"you already {'agree' if agree else 'disagree'} with {d}")
             changed = p in pr["agree"] or p in pr["disagree"]
             said = f"{p} {'now ' if changed else ''}{'agrees' if agree else 'disagrees'} with {d}"
         pr["disagree" if agree else "agree"].discard(p)

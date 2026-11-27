@@ -1,0 +1,29 @@
+description: Pilot with three same models
+seed: 42
+
+participants:
+  A:
+    model: openai:gpt-6-luna
+    model_settings:
+       reasoning_effort: low
+    silence_chance: 0.45
+    cooldown_after_reply: [0,2]
+    perception: raw
+    max_words: 12
+
+  B:
+    model: openai:gpt-6-luna
+    model_settings:
+       reasoning_effort: low
+    silence_chance: 0.45
+    cooldown_after_reply: [0,2]
+    perception: raw
+    max_words: 12
+  C:
+    model: openai:gpt-6-luna
+    model_settings:
+       reasoning_effort: low
+    silence_chance: 0.45
+    cooldown_after_reply: [0,2]
+    perception: raw
+    max_words: 12

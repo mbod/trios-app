@@ -13,7 +13,11 @@ rules:
   require_answer: false
   time_limit: 600
   decide: single
+  proposals: single
   on_wall: stay
   lives: 3
   extra_moves: 4
   wall_reveal: none
+variants:
+  majority:  {decide: majority}
+  consensus: {decide: all, proposals: multiple}
