@@ -1,7 +1,7 @@
 
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Any
 
 
 import yaml
@@ -26,6 +26,26 @@ DEFAULT_PROMPTS = {
 
 REQUIRED_PROMPTS = {"system", "decide", "turn", "silence"}
 
+# common rules for any task that can be set in tasks/<task_name>/task.yaml
+COMMON_RULES = {"order", "rounds", "pause_between_rounds", "clear_chat_between_rounds",
+                "time_limit", "message_limit", "warning_before_end", "require_answer" }
+
+# specific rules depending on the kind of engine used for task
+ENGINE_ROOMS = {
+    "choice":   COMMON_RULES | {"require_agreement", "selection_visibility"},
+    "matching": COMMON_RULES | {"grid", "director", "trial_end" },
+    "maze":     COMMON_RULES | {"decide", "proposals", "on_wall", "lives", "extra_moves",
+                                "wall_reveal"}
+}
+
+
+# --- util functions
+
+
+def unused_rules(engine: str, keys) -> list[str]:
+    return sorted(set(keys) - ENGINE_RULES[engine])
+
+# ----
 
 class AnswerSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -82,7 +102,7 @@ class TaskDef(BaseModel):
     answer: AnswerSpec | None = None
     rules: Rules = Field(default_factory=Rules)
     engine: Literal["choice", "matching", "maze"] = "choice"
-
+    variants: dict[str, dict[str, Any]] = {}
 
     
     @model_validator(mode="after")
@@ -92,6 +112,17 @@ class TaskDef(BaseModel):
 
         if self.engine == "choice" and self.answer is None:
             raise ValueError(f"task {self.name} needs an 'answer' section")
+
+        if bad := unused_rules(self.engine, self.rules.model_fields_set):
+            raise ValueError(f"task {self.name}: rules {bad} don't apply to the "
+                             f"{self.engine} engine")
+        for vname, vrules in self.variants.items():
+            if not NAME_PATTERN.match(vname):
+                raise ValueError(f"task {self.name}: invalid variant name '{vname}'")
+            if bad := unused_rules(self.engine, vrules):
+                raise ValueError(f"task {self.name}, variant {vname}: rules {bad} don't "
+                                 f"apply to the {self.engine} engine")
+            Rules(**{**self.rules.model_dump(), **vrules})      # type-check the values
         
         return self
 
@@ -128,6 +159,32 @@ def make_turn_action(actions: dict[str,str], answer: "AnswerSpec | None", placin
         __doc__="What to do on this turn",
         **fields
     )
+
+
+def list_tasks() -> list[str]:
+    return sorted(p.parent.name for p in TASK_DIR.glob("*/task.yaml")
+                  if NAME_PATTERN.match(p.parent.name))
+
+
+def task_catalogue() -> dict:
+    """
+    Each task's variants and stimulus sets, for the admin start form
+    """
+    out = {}
+    for name in list_tasks():
+        try:
+            data = yaml.safe_load((TASK_DIR / name / "task.yaml").read_text()) or {}
+            data.setdefault("name", name)
+            defn = TaskDef(**data)
+        except Exception as e:
+            out[name] = {"error": str(e)[:300], "variants": {}, "stimuli": []}
+            continue
+
+        stimuli = sorted(p.parent.name for p in (TASK_DIR / name / "stimuli").glob("*/stimuli.yaml"))
+        out[name] = {"variants": defn.variants, "stimuli": stimuli}
+    return out
+                         
+                                  
 
 
 

@@ -26,7 +26,7 @@ import hashlib
 
 from engine import ENGINES
 from config import load_condition
-from tasks import Rules, Task
+from tasks import Rules, Task, unused_rules
 
 
 LOG = logging.getLogger(__name__)
@@ -64,10 +64,25 @@ class Session:
         self.stimuli_name = stimuli_name
         self.stimuli = self.task.stimuli(stimuli_name)
 
-        self.rules = Rules(**{**self.task.defn.rules.model_dump(),
+        variant: str = ""
+        
+        defn = self.task.defn
+        if variant and variant not in defn.variants:
+            raise ValueError(f"task {defn.name} has no variant '{variant}'; "
+                             f"choose from {sorted(defn.variants) or 'none'}")
+        self.variant = variant or None
+        self.overrides = overrides
+        self.rule_warnings = []
+        if self.condition.rules:
+            self.rule_warnings.append(
+                f"condition {self.condition.name} sets rules {sorted(self.condition.rules)}; "
+                "move them to a task variant")
+        if bad := unused_rules(defn.engine, {**self.condition.rules, **overrides}):
+            self.rule_warnings.append(f"rules {bad} don't apply to the {defn.engine} engine")
+        self.rules = Rules(**{**defn.rules.model_dump(),
+                              **defn.variants.get(variant, {}),
                               **self.condition.rules,
-                              **overrides})
-
+                              **overrides})            
 
         self.engine = ENGINES[self.task.defn.engine](self.task, stimuli_name, self.stimuli, self.rules)
         seed = self.condition.seed
@@ -140,7 +155,10 @@ class Session:
                             "rounds": len(self.order),
                             "answer_format": self.task.defn.answer.model_dump() if self.task.defn.answer else None,
                             "participants": list(self.condition.participants),
-                            "code": code_version()
+                            "code": code_version(),
+                            "variant": self.variant,
+                            "overrides": self.overrides,
+                            "rule_warnings": self.rule_warnings
                            }, to=self.room)
 
         self.socketio.start_background_task(self._run)

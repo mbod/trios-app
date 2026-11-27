@@ -29,8 +29,8 @@ import requests
 from pathlib import Path
 from pydantic import ValidationError
 
-from config import NAME_PATTERN, list_conditions
-from tasks import TASK_DIR
+from config import NAME_PATTERN, list_conditions, load_condition, describe_condition
+from tasks import TASK_DIR, task_catalogue
 from session import SESSIONS, Session
 
 _ = load_dotenv()
@@ -106,7 +106,7 @@ def chatroom(room_id):
     if not ROOM_PATTERN.match(room_id):
         return "Invalid room_id", 400
     
-    session.clear()
+    session.pop("user_id", None)
     session['room'] = room_id
 
     user_id = request.args.get('user_id')
@@ -151,6 +151,7 @@ def create_session(room_id: str, params) -> tuple[dict, int]:
                               params.get("condition",""),
                               params.get("task",""),
                               params.get("stimuli", ""),
+                              params.get("variant", ""),
                               overrides, meta)
         except (ValueError, ValidationError, FileNotFoundError) as e:
             return {"error": str(e)}, 400
@@ -327,6 +328,7 @@ def admin_sessions():
                            sessions = list(SESSIONS.values()))
 
 
+
 @app.route("/admin/start", methods=["GET", "POST"])
 @admin_required
 def admin_start():
@@ -337,8 +339,14 @@ def admin_start():
             flash(f"Started {result['session_id']}")
             return redirect(url_for("admin_sessions"))
         error = result["error"]
+    conditions = {}
+    for name in list_conditions():
+        try:
+            conditions[name] = describe_condition(load_condition(name))
+        except Exception as e:
+            conditions[name] = f"error: {e}"
     return render_template("admin/start.html", error=error, form=request.form,
-                           conditions=list_conditions())
+                           conditions=conditions, catalogue=task_catalogue())
 
 
 @app.post("/admin/end_round/<room_id>")

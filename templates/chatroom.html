@@ -401,7 +401,7 @@
         for (const d of ['up', 'left', 'right', 'down'])
           pad.appendChild(mzButton(`${ARROWS[d]} ${d}`, `/go ${d}`, live, 'mz-' + d));
 
-        const votes = document.createElement('div');
+
         votes.className = 'mz-votes';
         votes.append(mzButton('Accept', '/accept', live && p && !accepted),
                      mzButton('Reject', '/reject', live && p && !mine),

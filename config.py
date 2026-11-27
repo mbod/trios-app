@@ -99,6 +99,29 @@ class Condition(BaseModel):
         return settings
 
 
+def describe_condition(c: Condition) -> str:
+    """
+    Describe a condition from a condition YAML
+    """
+    lines = []
+    for p, s in c.participants.items():
+        if s == "human":
+            lines.append(f"{p}: human")
+            continue
+        bits = [s.model, f"perception {s.perception}", f"turn_taking {s.turn_taking}"]
+        if s.max_words:
+            bits.append(f"max {s.max_words} words")
+        if s.typing_wpm:
+            bits.append(f"typing {s.typing_wpm[0]:g}-{s.typing_wpm[1]:g} wpm")
+        lines.append(f"{p}: " + ", ".join(bits))
+
+    if c.rules:
+        lines.append(f"rules {c.rules} (move these to a task variant)")
+
+    return "\n".join(lines)
+            
+
+    
 def load_condition(name: str) -> Condition:
     if not NAME_PATTERN.match(name):
         raise ValueError(f"invalid condition name '{name}'")
