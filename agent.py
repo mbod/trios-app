@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from config import AgentSettings
 from llm import build_chat_model, structured, provider_slot
-from tasks import Task
+from tasks import Task, COMMAND_ENGINES
 
 LOG = logging.getLogger(__name__)
 
@@ -53,10 +53,39 @@ class Trigger:
     """
     What action or event prompted a turn?
     """
-    kind: str             # "message" | "silence" | "round_start" | "status"
+    kind: str             # "message" | "silence" | "round_start" | "status" | "feedback"
     sender: str | None = None
     text: str = ""
 
+
+# --- helper and other module functions
+def maze_text(v: dict, round_label) -> str:
+    """The maze as the agent knows it, as a text grid with its state."""
+    rows, cols = v["size"]
+    walls = set(v.get("walls_found", []))
+    lines = ["    " + "".join(f"c{c + 1}".center(4) for c in range(cols))]
+    for r in range(rows):
+        cells = []
+        for c in range(cols):
+            name = f"r{r + 1}c{c + 1}"
+            sym = "x" if name in walls else v["known"].get(name, "?")
+            if name == v["position"]:
+                sym = "@"
+            cells.append({"s": "S", "e": "E", ".": ".", "x": "#", "?": "?", "@": "@"}[sym].center(4))
+        lines.append(f"r{r + 1:<3}" + "".join(cells))
+    props = "; ".join(
+        f"{p['dir']} (by {p['by']}): for {', '.join(p['agree']) or 'nobody'}"
+        + (f", against {', '.join(p['disagree'])}" if p["disagree"] else "")
+        for p in v.get("proposals", [])) or "none"
+    return (f"Round {round_label}: the maze as you know it "
+            "(@ = the token, S start, E end, . open, # wall, ? unknown to you):\n"
+            + "\n".join(lines)
+            + f"\nYou are at {v['position']}. Lives: {v['lives']}. Moves left: {v['moves_left']}."
+            + f"\nOpen proposals: {props}.")
+
+
+# ----------------
+    
 
 class Agent:
     def __init__(self, id: str, room: str, ws_url: str, socketio_path: str,
@@ -75,6 +104,7 @@ class Agent:
         self.ws_url = ws_url
         self.socketio_path = socketio_path
         self.task = task
+        self.uses_commands = task.defn.engine in COMMAND_ENGINES
         self.settings = settings
         self.rng = random.Random(f"{seed}-{room}-{id}") if seed is not None else random.Random()
 
@@ -213,6 +243,10 @@ class Agent:
             first = self.view is None
             self.view = data
 
+            if not first and "size" in data:         # maze task will have a maze size param and therefore agent can load a view
+                self.load_view_materials()
+                return
+
             if first:
                 try:
                     self.load_view_materials()
@@ -230,7 +264,21 @@ class Agent:
             self.note(f"Your card placement was not accepted: {data.get('error')}")
             self.trace(stage="action_error", outcome="rejected", error=data.get("error"))
 
-             
+
+        @self.sio.on("notice")
+        async def on_notice(data):
+            self.note(data.get("text",""), trigger=True)
+
+        @self.sio.on("command_feedback")
+        async def on_command_feedback(data):
+            if data.get("participant") != self.id or not data.get("text"):
+                return
+            if data.get("ok"):
+                self.note(data["text"])
+            else:
+                self.note(f"Your command was not accept: {data['text']}",
+                          trigger=True, kind="feedback")
+            
     def start_round(self, data):
         self.round_label = data["round"]
         self.view = None
@@ -292,13 +340,13 @@ class Agent:
             self.triggers.put_nowait(Trigger("round_start"))
 
 
-    def note(self, text: str, trigger: bool = False):
+    def note(self, text: str, trigger: bool = False, kind: str = "status"):
         """
         Add a notice to the agent's history, as a human would see it on screen
         """
         self.history.append({"role": "user", "content": f"[{text}]"})
         if trigger and self.in_round:
-            self.triggers.put_nowait(Trigger("status", text=text))
+            self.triggers.put_nowait(Trigger(kind, text=text))
 
 
     # --- taking turns -------------------------------
@@ -363,6 +411,12 @@ class Agent:
         Matching: the director's target grid, or a matcher's labelled cards
         """
         v = self.view
+
+        if "size" in v:
+            self.materials_message = {"role": "user", "content": maze_text(v, self.round_label)}
+            self.image=""
+            return
+        
         if v["role"] == "director":
             items = [(f"Slot {i}", url) for i, url in enumerate(v["target"], start=1)]
             heading = "Your target grid, slot by slot:"
@@ -510,7 +564,7 @@ class Agent:
         return "\n".join(parts)
 
 
-    TRIGGER_PRIORITY = ("round_start", "status")
+    TRIGGER_PRIORITY = ("round_start", "feedback", "status")
     
     def _pick(self, waiting: list[Trigger]) -> Trigger:
         """
@@ -527,8 +581,15 @@ class Agent:
     # --- actions ------------------
     async def act(self, action, context_seq: int, cooldown, epoch=None, turn_id=None):
         """
-        Carry out the action the model chose
+        Carry out the model's reply. Command tasks: one message (commands inside
+        it). Other tasks: placements, message, done signal, as before.
         """
+        if not hasattr(action, "current_action"):
+            if (action.message or "").strip():
+                await self.say(action.message, cooldown, context_seq, epoch, turn_id)
+            else:
+                self.trace(stage="wait", outcome="quiet", context_seq=context_seq, turn_id=turn_id)
+            return
 
         for p in getattr(action, "places", None) or []:
             if not self.in_round or (epoch is not None and epoch != self.round_epoch):
@@ -536,7 +597,7 @@ class Agent:
             await self.sio.emit("task_action", {"type": "place", "card": p.card,
                                                 "slot": p.slot})
             self.trace(stage="action", outcome="sent", card=p.card, slot=p.slot, turn_id=turn_id)
-        
+
         if action.current_action == "wait":
             return
         if action.message:
@@ -550,7 +611,7 @@ class Agent:
                 await self.signal_done(True, answer)
         elif action.current_action == "withdraw" and self.done:
             await self.signal_done(False)
-
+    
 
 
 
@@ -705,10 +766,14 @@ class Agent:
        
 
     def _trace_system_prompt(self):
+        s = self.settings
         self.trace(stage="system_prompt", outcome="ok",
-                    prompt_sha256=hashlib.sha256(self.prompt.encode()).hexdigest(),
-                    prompt=self.prompt, image=self.image_file)
-
+                   prompt_sha256=hashlib.sha256(self.prompt.encode()).hexdigest(),
+                   prompt=self.prompt, image=self.image_file,
+                   policy={"turn_taking": s.turn_taking, "speak_when": s.speak_when,
+                           "defer": s.defer, "interrupt": s.interrupt, "memory": s.memory,
+                           "perception": s.perception, "commands": self.uses_commands})
+        
     def _loop_stopped(self, task):
         if not task.cancelled() and task.exception():
             LOG.error(f"{self.id}: turn loop stopped", exc_info=task.exception())
@@ -736,7 +801,6 @@ class Agent:
         return seconds
 
 
-
     def render_decide(self, trigger) -> str:
         return self.task.render("decide",
                                 participant=self.id,
@@ -744,8 +808,10 @@ class Agent:
                                 last_message=trigger.text,
                                 typing_note=self.typing_note(),
                                 status_note=self.status_note(),
-                                role=(self.view or {}).get("role")
-                                )
+                                role=(self.view or {}).get("role"),
+                                speak_when=self.settings.speak_when,
+                                defer=self.settings.defer,
+                                commands=self.uses_commands)
 
     def render_turn(self, silence: bool) -> str:
         return self.task.render("turn",
@@ -753,8 +819,9 @@ class Agent:
                                 typing_note=self.typing_note(),
                                 status_note=self.status_note(),
                                 max_words=self.settings.max_words,
-                                role=(self.view or {}).get("role")
-                                )
+                                role=(self.view or {}).get("role"),
+                                commands=self.uses_commands,
+                                help=(self.view or {}).get("help", ""))
 
 
 

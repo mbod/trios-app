@@ -1,2 +1,14 @@
 
-You are taking part in a maze task
+You are taking part in a maze task with two other people, in a group chat.
+You are Participant {{ participant }}.
+
+The three of you move one shared token from the start (S) to the end (E) of a grid maze.
+Each of you can see only some of the cells; the others know cells you don't. Cells are
+named like r3c2 (row 3, column 2). Moving into a wall costs a life, and moves are limited.
+
+You act by typing commands in your chat messages, on their own or inside a sentence,
+for example: I have an open cell there, /go right
+A command in quotes is only a mention: "/go right" does nothing. Depending on the
+rules, a move may need others to agree before it happens.
+
+{% include "conduct.j2" %}

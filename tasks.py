@@ -38,6 +38,7 @@ ENGINE_RULES = {
                                 "wall_reveal"}
 }
 
+COMMAND_ENGINES = {"maze"}          # which tasks use typed commands in chat message
 
 # --- util functions
 
@@ -127,11 +128,20 @@ class TaskDef(BaseModel):
         return self
 
 
-def make_turn_action(actions: dict[str,str], answer: "AnswerSpec | None", placing: bool = False):
+def make_turn_action(actions: dict[str,str], answer: "AnswerSpec | None",
+                     placing: bool = False, commands: bool = False):
     """
     Build the TurnAction output schema from the task's actions and answer format
     """
 
+    if commands:
+        return create_model(
+            "Reply",
+            __doc__ = "Your next chat message",
+            message=(str, Field(default="", description=(
+                "your next chat message; it may include commands, on their own or "
+                "inside a sentence. Leave empty to stay quiet"))))
+    
     fields = {
         "current_action": (Literal[tuple(actions)], Field(description="the action to take")),
         "message": (str, Field(default="", description=(
@@ -206,7 +216,8 @@ class Task:
             lstrip_blocks=True
         )
         self.TurnAction = make_turn_action(self.defn.actions, self.defn.answer,
-                                           placing=self.defn.engine == "matching")
+                                           placing=self.defn.engine == "matching",
+                                           commands=self.defn.engine in COMMAND_ENGINES)
 
         self.prompts = self.prompt_files()
 

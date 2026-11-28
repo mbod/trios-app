@@ -8,12 +8,16 @@ Last message: {{ last_message }}
 
 
 Speak only if one of these is true:
-- You were directly asked a question.
-- You have new information about your {{ task.materials_name }}.
-- You need to signal done, or withdraw your done signal.
+{% if "asked" in speak_when %}- You were directly asked a question.
+{% endif %}{% if "new_info" in speak_when %}- You have new information about your {{ task.materials_name }}.
+{% endif %}{% if "unsure" in speak_when %}- You are unsure about something and need to ask or check.
+{% endif %}{% if "want_to_act" in speak_when %}- You want to act in the task{% if commands %} with a command{% endif %}, with or without saying anything.
+{% endif %}{% if "done" in speak_when %}- You need to signal done, or withdraw your done signal.
+{% endif %}
 {% include "decide_reasons.j2" ignore missing %}
 
 Do NOT speak if:
 - You would repeat something you already said.
-- The latest message is better answered by someone else.
+{% if defer %}- The latest message is better answered by someone else.
+{% endif %}
 {% include "decide_avoid.j2" ignore missing %}

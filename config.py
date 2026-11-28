@@ -50,11 +50,12 @@ class AgentSettings(BaseModel):
 
 
     # Behavior (strategies.py has details of turn taking strategies)
-    turn_taking: str = "decide_then_act"
-    interrupt: Literal["send_anyway", "cancel"] = "send_anyway"
+    turn_taking: str = "act_only"
+    speak_when: list[Literal["asked", "new_info", "unsure", "want_to_act", "done"]] = \
+        ["asked", "new_info", "done"]                # decide_then_act only: reasons to take a turn
+    defer: bool = True                               # decide_then_act only: stay quiet if someone else is better placed
+    interrupt: Literal["send_anyway", "cancel"] = "send_anyway"    # what to do if a new message comes as agent is composing one
     memory: Literal["full", "none"] = "full"
-    
-    perception: Literal["raw", "image", "self_description"] = "raw"
     
     # Messages
     max_words: int | None = None            # sent to model to restrict output

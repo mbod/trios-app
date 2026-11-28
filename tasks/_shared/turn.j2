@@ -5,6 +5,15 @@
 {{ typing_note }}
 {{ status_note }}
 
+{% if commands %}
+Write your next message to the group, or leave it empty to stay quiet.
+To act, include commands in your message, on their own or inside a sentence,
+for example: I have an open cell there, /go right
+A command in quotes is only a mention and does nothing.
+
+Commands:
+{{ help }}
+{% else %}
 Decide what to say next in the group discussion.
 
 
@@ -14,9 +23,9 @@ You may:
 {% for action, description in task.actions.items() %}
 - {{ action }}: {{ description }}
 {% endfor %}
-
+{% endif %}
 
 {% if max_words %}
 Keep the message concise and natural.
-Keep your message under {{ max_words }} words.
+Keep your message under {{ max_words }} words, not counting commands.
 {% endif %}
